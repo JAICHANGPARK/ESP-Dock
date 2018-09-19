@@ -1,4 +1,3 @@
-
 #include <SPI.h>
 #include <MFRC522.h>
 
@@ -18,11 +17,16 @@ MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
 
 BLEServer *pServer = NULL;
-BLECharacteristic * pTxCharacteristic;
+BLEService *pService ; // Create the BLE Service
+BLECharacteristic * pTxCharacteristic ; // Create a BLE Characteristic
+BLECharacteristic * pRxCharacteristic ; // Create a BLE Characteristic
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint8_t txValue = 0;
 
+uint8_t nuidPICC[4] = {0x00,}; // Init array that will store new NUID
+char inByte;
+boolean sendFlag = false;
 
 
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -42,9 +46,9 @@ class MyCallbacks: public BLECharacteristicCallbacks {
       if (rxValue.length() > 0) {
         Serial.println("*********");
         Serial.print("Received Value: ");
-        for (int i = 0; i < rxValue.length(); i++)
+        for (int i = 0; i < rxValue.length(); i++) {
           Serial.print(rxValue[i]);
-
+        }
         Serial.println();
         Serial.println("*********");
       }
@@ -52,37 +56,11 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 };
 
 
-// Init array that will store new NUID
-byte nuidPICC[4] = {0x00,};
-char inByte;
 
-boolean sendFlag = false;
+
 void setup() {
 
   Serial.begin(9600);
-
-  BLEDevice::init("FITNESS_ADMIN");
-  pServer = BLEDevice::createServer();
-  pServer -> setCallback(new MyServerCallbacks());
-
-  // Create the BLE Service
-  BLEService *pService = pServer->createService(SERVICE_UUID);
-
-  // Create a BLE Characteristic
-  pTxCharacteristic = pService->createCharacteristic(
-                        CHARACTERISTIC_UUID_TX,
-                        BLECharacteristic::PROPERTY_NOTIFY
-                      );
-
-  pTxCharacteristic->addDescriptor(new BLE2902());
-
-  BLECharacteristic * pRxCharacteristic = pService->createCharacteristic(
-      CHARACTERISTIC_UUID_RX,
-      BLECharacteristic::PROPERTY_WRITE
-                                          );
-
-  pRxCharacteristic->setCallbacks(new MyCallbacks());
-
 
   SPI.begin(); // Init SPI bus
   rfid.PCD_Init(); // Init MFRC522
@@ -94,9 +72,43 @@ void setup() {
   Serial.println(F("This code scan the MIFARE Classsic NUID."));
   Serial.print(F("Using the following key:"));
   printHex(key.keyByte, MFRC522::MF_KEY_SIZE);
+
+  BLEDevice::init("FITNESS_ADMIN");
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+
+  pService = pServer->createService(SERVICE_UUID); // Create the BLE Service
+  pTxCharacteristic = pService -> createCharacteristic(CHARACTERISTIC_UUID_TX, BLECharacteristic::PROPERTY_NOTIFY); // Create a BLE Characteristic
+  pTxCharacteristic -> addDescriptor(new BLE2902());
+  pRxCharacteristic = pService -> createCharacteristic(CHARACTERISTIC_UUID_RX, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE); // Create a BLE Characteristic
+  pRxCharacteristic -> setCallbacks(new MyCallbacks());
+
+
+  pService->start();  // Start the service
+  pServer->getAdvertising()->start();  // Start advertising
+
 }
 
 void loop() {
+
+  if (deviceConnected) {
+    pTxCharacteristic->setValue(&txValue, 1);
+    pTxCharacteristic->notify();
+    txValue++;
+    delay(10); // bluetooth stack will go into congestion, if too many packets are sent
+  }
+
+  if (!deviceConnected && oldDeviceConnected) { // disconnecting
+    delay(500); // give the bluetooth stack the chance to get things ready
+    pServer->startAdvertising(); // restart advertising
+    Serial.println("start advertising");
+    oldDeviceConnected = deviceConnected;
+  }
+
+  if (deviceConnected && !oldDeviceConnected) { // connecting
+    oldDeviceConnected = deviceConnected;  // do stuff here on connecting
+  }
 
   while (Serial.available()) {
     // get incoming byte:
@@ -105,10 +117,14 @@ void loop() {
     Serial.write(inByte);
     if (inByte == 'r') {
       //      printHex(rfid.uid.uidByte, rfid.uid.size); // 1차 시행 : 초기에 태그가 찍히지 않으면 리턴 값 없음
+      std::string  msg = "";
       for (byte i = 0; i < 4; i++) {
         Serial.print(nuidPICC[i], HEX);
+        msg += nuidPICC[i];
       }
       Serial.println("");
+      //      pRxCharacteristic->setValue("Hello World");
+      pRxCharacteristic -> setValue(nuidPICC, 4);
     }
   }
 
