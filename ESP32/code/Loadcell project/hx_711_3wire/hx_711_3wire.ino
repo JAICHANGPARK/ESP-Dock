@@ -67,12 +67,15 @@ long Hx711::value()
     for (char i = 8; i--;)
     {
       digitalWrite(SCK, HIGH);
+      delayMicroseconds(1);
       bitWrite(data[j], i, digitalRead(DOUT));
       digitalWrite(SCK, LOW);
+      delayMicroseconds(1);
     }
   }
 
   digitalWrite(SCK, HIGH);
+  delayMicroseconds(1);
   digitalWrite(SCK, LOW);
 
   data[2] ^= 0x80;
@@ -135,18 +138,20 @@ long val, val2 = 0;
 float count = 0;
 void loop() {
 
-  val2 = scale.value_b();
-  Serial.println((val2));
+  val2 = scale.value();
+  Serial.println((val2 - 9841326));
 
-  //---------------------STEP 1 이동평균 이용
-  //  count += 1;
-  //  val2 = ((count - 1) / count) * val2;
-  //  val2 = val2 + (1 / count) * scale.value_b();
-  //  Serial.println(val2);
+
+  // ---------------------STEP 1 이동평균 이용
+  //    count += 1;
+  //    val2 = ((count - 1) / count) * val2;
+  //    val2 = val2 + (1 / count) * scale.value();
+  //    Serial.println(val2);
 
   //---------------------STEP 2 이동평균 값 빼서 값 확인
-  //  val2 = scale.value_b();
-  //  Serial.println((val2 - 8368930));
+  //  val2 = scale.value();
+  //  Serial.println((val2 - 9861599));
+  //  delay(500);
 
   //---------------------STEP 3 기준 무게 스케일링
   // 100g 의 분동을 올렸을 때의 값을 나눈다..(val2 - 8368930) / 10540.0f)
