@@ -67,8 +67,8 @@ long Hx711::value()
     for (char i = 8; i--;)
     {
       digitalWrite(SCK, HIGH);
-      delayMicroseconds(1);
       bitWrite(data[j], i, digitalRead(DOUT));
+      delayMicroseconds(1);
       digitalWrite(SCK, LOW);
       delayMicroseconds(1);
     }
@@ -126,7 +126,7 @@ float Hx711::gram()
   return (float) val / _scale;
 }
 
-Hx711 scale(26, 25);
+Hx711 scale(18, 19);
 
 void setup() {
 
@@ -139,7 +139,7 @@ float count = 0;
 void loop() {
 
   val2 = scale.value();
-  Serial.println((val2 - 9841326));
+  Serial.println((val2-11934739));
 
 
   // ---------------------STEP 1 이동평균 이용
