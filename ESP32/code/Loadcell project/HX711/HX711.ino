@@ -131,7 +131,7 @@ void setup() {
   Serial.begin(9600);
 
 }
-long val = 0;
+long val, val2 = 0;
 float count = 0;
 void loop() {
 
@@ -145,10 +145,20 @@ void loop() {
   //  Serial.print(scale.value(), HEX);
   //  Serial.println(" g");
 
-//  val = (0.7 * val) + (0.3 * scale.value());
-//  Serial.println((val - 8315648) / 434.42f);
+  //  val = (0.7 * val) + (0.3 * scale.value());
+  //  Serial.println((val - 8315648) / 434.42f);
 
-  Serial.println(scale.value_b());
+  //  count += 1;
+  //  val2 = ((count - 1) / count) * val2;
+  //  val2 = val2 + (1 / count) * scale.value_b();
+  //  val2 = scale.value_b();
+  val2 = (0.7 * val2) + (0.3 * scale.value_b());
+  Serial.println((val2 - 8368870) / (10925.0f / 100.0f)); 
+  //  val2 = scale.value_b();
+
+  //  Serial.print(scale.value_b());
+  //  Serial.print("-->");
+  //  Serial.println(scale.value_b(), HEX);
 
 }
 
