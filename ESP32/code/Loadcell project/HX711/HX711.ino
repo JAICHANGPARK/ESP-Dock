@@ -140,7 +140,6 @@ void loop() {
   //  val = val + (1 / count) * scale.value();
   //    val = scale.value();
 
-
   //  Serial.print(scale.gram() * 2, 1);
   //  Serial.print(scale.value(), HEX);
   //  Serial.println(" g");
@@ -152,11 +151,26 @@ void loop() {
   //  val2 = ((count - 1) / count) * val2;
   //  val2 = val2 + (1 / count) * scale.value_b();
   //  val2 = scale.value_b();
-  val2 = (0.7 * val2) + (0.3 * scale.value_b());
-  Serial.println((val2 - 8368870) / (10925.0f / 100.0f)); 
+  //  val2 = (0.7 * val2) + (0.3 * scale.value_b());
+  //  Serial.println((val2 - 8368870) / (10925.0f / 100.0f));
   //  val2 = scale.value_b();
 
-  //  Serial.print(scale.value_b());
+  //---------------------STEP 1 이동평균 이용
+  //  count += 1;
+  //  val2 = ((count - 1) / count) * val2;
+  //  val2 = val2 + (1 / count) * scale.value_b();
+  //  Serial.println(val2);
+
+  //---------------------STEP 2 이동평균 값 빼서 값 확인
+  //  val2 = scale.value_b();
+  //  Serial.println((val2 - 8368630));
+
+  //---------------------STEP 3 기준 무게 스케일링
+  count += 1;
+  val2 = ((count - 1) / count) * val2;
+  val2 = val2 + (1 / count) * scale.value_b();
+  Serial.println(val2 - 8368630);
+
   //  Serial.print("-->");
   //  Serial.println(scale.value_b(), HEX);
 
