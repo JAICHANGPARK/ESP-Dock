@@ -163,13 +163,21 @@ void loop() {
 
   //---------------------STEP 2 이동평균 값 빼서 값 확인
   //  val2 = scale.value_b();
-  //  Serial.println((val2 - 8368630));
+  //  Serial.println((val2 - 8368930));
 
   //---------------------STEP 3 기준 무게 스케일링
-  count += 1;
-  val2 = ((count - 1) / count) * val2;
-  val2 = val2 + (1 / count) * scale.value_b();
-  Serial.println(val2 - 8368630);
+  // 100g 의 분동을 올렸을 때의 값을 나눈다..(val2 - 8368930) / 10540.0f)
+  // 단위를 위해 g 의  100을 더 나눈다.(val2 - 8368930) / 10540.0f)
+  // 시행 1 값 : 105.4f
+  //  count += 1;
+  //  val2 = ((count - 1) / count) * val2;
+  //  val2 = val2 + (1 / count) * scale.value_b();
+  //  Serial.println( (val2 - 8368930) / 105.4f);
+
+  //---------------------STEP 4 LPF
+  // 이전 값의 영향 정도를 수정한다.
+  val2 = (0.7 * val2) + (0.3 * scale.value_b());
+  Serial.println( (val2 - 8368930) / 107.17f);
 
   //  Serial.print("-->");
   //  Serial.println(scale.value_b(), HEX);
