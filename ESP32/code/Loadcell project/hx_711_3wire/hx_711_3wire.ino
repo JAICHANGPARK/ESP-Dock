@@ -59,6 +59,7 @@ long Hx711::value()
 {
   byte data[3];
 
+  delayMicroseconds(1);
   while (digitalRead(DOUT))
     ;
 
@@ -68,14 +69,13 @@ long Hx711::value()
     {
       digitalWrite(SCK, HIGH);
       bitWrite(data[j], i, digitalRead(DOUT));
-      delayMicroseconds(1);
+      delayMicroseconds(2);
       digitalWrite(SCK, LOW);
-      delayMicroseconds(1);
+      delayMicroseconds(2);
     }
   }
 
   digitalWrite(SCK, HIGH);
-  delayMicroseconds(1);
   digitalWrite(SCK, LOW);
 
   data[2] ^= 0x80;
@@ -134,19 +134,22 @@ void setup() {
   Serial.begin(9600);
 
 }
+
 long val, val2 = 0;
 float count = 0;
+
 void loop() {
 
   val2 = scale.value();
-  Serial.println((val2-11934739));
-
+  Serial.println(val2 - 13219567 );
+//  Serial.println((val2 - 13185294) / 211.43f);
+  delay(10);
 
   // ---------------------STEP 1 이동평균 이용
-  //    count += 1;
-  //    val2 = ((count - 1) / count) * val2;
-  //    val2 = val2 + (1 / count) * scale.value();
-  //    Serial.println(val2);
+  //  count += 1;
+  //  val2 = ((count - 1) / count) * val2;
+  //  val2 = val2 + (1 / count) * scale.value();
+  //  Serial.println(val2);
 
   //---------------------STEP 2 이동평균 값 빼서 값 확인
   //  val2 = scale.value();
