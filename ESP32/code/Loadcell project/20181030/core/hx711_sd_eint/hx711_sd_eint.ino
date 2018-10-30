@@ -289,14 +289,23 @@ void setup() {
   settimeofday(&tv, NULL);
 
 }
-
+boolean toggle = false;
 void loop() {
   // put your main code here, to run repeatedly:
 
   gettimeofday(&mytime, NULL);
   Serial.print("times ==> "); Serial.println(mytime.tv_sec);
   // put your main code here, to run repeatedly:
+  Serial.println(digitalRead(34));
   if (button1.pressed) {
+
+    if (!toggle) { // 식사 시작시 시작시간 저장.
+      toggle = true;
+      Serial.println("식사시작 ");
+    } else { // 식사 종료시 종료시간 저장 및 데이터 저장 처리 
+      toggle = false;
+      Serial.println("식사 종료 ");
+    }
     Serial.printf("Button 1 has been pressed %u times\n", button1.numberKeyPresses);
     button1.pressed = false;
   }
