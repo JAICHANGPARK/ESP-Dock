@@ -39,13 +39,13 @@ class MyServerCallbacks: public BLEServerCallbacks {
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
-
+      Serial.print();
       if (rxValue.length() > 0) {
         Serial.println("*********");
         Serial.print("Received Value: ");
-        for (int i = 0; i < rxValue.length(); i++)
+        for (int i = 0; i < rxValue.length(); i++) {
           Serial.print(rxValue[i]);
-
+        }
         Serial.println();
         Serial.println("*********");
       }
@@ -195,7 +195,7 @@ volatile long offset = 0;
 
 volatile unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 150;    // the debounce time; increase if the output flickers
-
+long startIntakeTime = 0;
 volatile float rice = 0.0f;
 
 boolean toggle = false;
@@ -412,6 +412,13 @@ void loop() {
 
   if (button3.pressed) { //식사 시작
     Serial.printf("Button 3 has been pressed %u times\n", button3.numberKeyPresses);
+    //시간 정보 저장
+    gettimeofday(&mytime, NULL);
+    startIntakeTime = mytime.tv_sec;
+    Serial.print("식사 시작 : 시작시간 ==> ");
+    Serial.println(startIntakeTime);
+    // 중량 정보 저장
+    
     button3.pressed = false;
   }
 
