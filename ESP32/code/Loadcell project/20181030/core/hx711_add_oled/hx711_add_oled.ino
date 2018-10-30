@@ -39,15 +39,20 @@ class MyServerCallbacks: public BLEServerCallbacks {
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
-      Serial.print();
+      uint8_t tmp[rxValue.length()];
       if (rxValue.length() > 0) {
         Serial.println("*********");
         Serial.print("Received Value: ");
         for (int i = 0; i < rxValue.length(); i++) {
           Serial.print(rxValue[i]);
+          tmp[i] = rxValue[i];
         }
         Serial.println();
         Serial.println("*********");
+        for (int i = 0; i < rxValue.length(); i++) {
+          Serial.print(tmp[i]);
+        }
+
       }
     }
 };
@@ -418,7 +423,7 @@ void loop() {
     Serial.print("식사 시작 : 시작시간 ==> ");
     Serial.println(startIntakeTime);
     // 중량 정보 저장
-    
+
     button3.pressed = false;
   }
 
