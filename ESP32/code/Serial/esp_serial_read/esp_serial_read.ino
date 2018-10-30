@@ -3,6 +3,7 @@ boolean sendFlag = false;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  pinMode(5, OUTPUT);
 
 }
 
@@ -21,12 +22,15 @@ void loop() {
       }
     }
   }
- 
+
   if (sendFlag) {
+    digitalWrite(5, HIGH);
     for (byte i = 0; i < 4; i++) {
       Serial.print("wow");
     }
+    delay(1000);
     sendFlag = false;
+    digitalWrite(5, LOW);
   }
 
 }
