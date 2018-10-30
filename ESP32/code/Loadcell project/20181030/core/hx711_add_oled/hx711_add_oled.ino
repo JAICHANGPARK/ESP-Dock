@@ -378,7 +378,9 @@ void setup() {
   Serial.println("Waiting a client connection to notify...");
 
   display.init();
-  display.drawString(0, 0, "Hellow World");
+  display.flipScreenVertically();
+
+  display.drawString(0, 0, "Hello World");
   display.display();
 
 
@@ -435,6 +437,32 @@ void loop() {
     gettimeofday(&mytime, NULL);
     Serial.print("times ==> "); Serial.println(mytime.tv_sec);
     Serial.println(digitalRead(34));
+    String dis = String(average(20));
+
+    display.clear();
+    display.setFont(ArialMT_Plain_10);
+    display.drawString(0, 0, "Rice");
+    display.setFont(ArialMT_Plain_16);
+    display.drawString(0, 10, dis + "g");
+
+    display.setFont(ArialMT_Plain_10);
+    display.drawString(64, 0, "soup");
+    display.setFont(ArialMT_Plain_16);
+    display.drawString(64, 10, dis + "g");
+    display.drawHorizontalLine(0, 30, 128);
+
+    //    display.setFont(ArialMT_Plain_10);
+    //    display.drawString(0, 31, "side a");
+    display.setFont(ArialMT_Plain_16);
+    display.drawString(0, 31, dis + "g");
+    display.setFont(ArialMT_Plain_16);
+    display.drawString(0, 47, dis + "g");
+
+    display.setFont(ArialMT_Plain_16);
+    display.drawString(64, 31, dis + "g");
+    display.setFont(ArialMT_Plain_16);
+    display.drawString(64, 47, dis + "g");
+    display.display();
   }
 
   // disconnecting
