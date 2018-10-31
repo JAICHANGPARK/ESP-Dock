@@ -40,7 +40,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
       digitalWrite(5, true);
     }
 };
-
+boolean timeSyncFlag = false;
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
@@ -63,10 +63,10 @@ class MyCallbacks: public BLECharacteristicCallbacks {
           Serial.write(tmp[i]);
         }
 
-        receivedTime = (rxValue[0] << 24 & 0xff000000) 
-        | (rxValue[1] << 16 & 0x00ff0000) 
-        | (rxValue[2] << 8 & 0x0000ff00)
-        | (rxValue[3] & 0x000000ff);
+        receivedTime = (rxValue[0] << 24 & 0xff000000)
+                       | (rxValue[1] << 16 & 0x00ff0000)
+                       | (rxValue[2] << 8 & 0x0000ff00)
+                       | (rxValue[3] & 0x000000ff);
 
         Serial.print(receivedTime);
 
