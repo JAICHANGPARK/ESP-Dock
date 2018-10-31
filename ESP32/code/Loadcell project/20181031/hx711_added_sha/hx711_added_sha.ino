@@ -85,23 +85,13 @@ class MyCallbacks: public BLECharacteristicCallbacks {
           Serial.println(receivedTime);
           tv.tv_sec = receivedTime;
           settimeofday(&tv, NULL);
-
-          //          receivedTime = (receivedCallback[2] << 24 & 0xff000000)
-          //                         | (receivedCallback[3] << 16 & 0x00ff0000)
-          //                         | (receivedCallback[4] << 8 & 0x0000ff00)
-          //                         | (receivedCallback[5] & 0x000000ff);
-          //          Serial.println(receivedTime);
-          //          tv.tv_sec = receivedTime;
-          //          settimeofday(&tv, NULL);
         } else if (rxValue[0] == 0x02 && rxValue[1] == 0x02 && rxValue[19] == 0x03) {
           Serial.println("동기화 콜백 들어옴");
           secondPhase = true;
           for (int i = 0; i < rxValue.length(); i++) {
             receivedCallback[i] = rxValue[i];
           }
-
         }
-
       }
     }
 };
@@ -244,7 +234,7 @@ volatile long offset = 0;
 
 volatile unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 150;    // the debounce time; increase if the output flickers
-long startIntakeTime = 0;
+long startIntakeTime = 0;  // 섭취 시작 시간 
 volatile float rice = 0.0f;
 
 boolean toggle = false;
@@ -450,9 +440,9 @@ void loop() {
     rice = average(20);
     gettimeofday(&mytime, NULL);
     //    Serial.print("times ==> "); Serial.println(mytime.tv_sec);
-    char x[18];
+    char x[30] = {};
     //    char y[11];
-    sprintf(x, "%3.1f,%ld\n", rice, mytime.tv_sec);
+    sprintf(x, "%3.1f,%ld,%ld\n", rice, startIntakeTime, mytime.tv_sec);
 
     appendFile(SD, "/foo.txt", x);
     //    appendFile(SD, "/foo.txt", y);
@@ -494,7 +484,7 @@ void loop() {
 
       boolean checkAuth = false;
 
-      for (int i = 0; i < 17; i++) {
+      for (int i = 0; i < 17; i++) { // Hash 값 비교 과정 
         if (receivedCallback[i + 2] == shaResult[i]) {
           checkAuth = true;
         } else {
