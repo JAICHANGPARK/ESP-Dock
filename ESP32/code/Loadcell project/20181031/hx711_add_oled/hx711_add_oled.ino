@@ -13,9 +13,14 @@
 #include "SH1106Wire.h"
 
 
-#define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
-#define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
-#define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+//#define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
+//#define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+//#define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+
+#define SERVICE_UUID           "0000ffe0-0000-1000-8000-00805f9b34fb" // UART service UUID
+#define CHARACTERISTIC_UUID_RX "0000ffe1-0000-1000-8000-00805f9b34fb"
+#define CHARACTERISTIC_UUID_TX "0000ffe2-0000-1000-8000-00805f9b34fb"
+
 
 BLEServer *pServer = NULL;
 BLECharacteristic * pTxCharacteristic;
@@ -40,6 +45,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
       uint8_t tmp[rxValue.length()];
+      uint32_t receivedTime = 0;
       if (rxValue.length() > 0) {
         Serial.println("*********");
         Serial.print("Received Value: ");
@@ -53,9 +59,16 @@ class MyCallbacks: public BLECharacteristicCallbacks {
           Serial.print(tmp[i]);
         }
         for (int i = 0; i < rxValue.length(); i++) {
-          std::cout << typeid(tmp[i]).name();
+
           Serial.write(tmp[i]);
         }
+
+        receivedTime = (rxValue[0] << 24 & 0xff000000) 
+        | (rxValue[1] << 16 & 0x00ff0000) 
+        | (rxValue[2] << 8 & 0x0000ff00)
+        | (rxValue[3] & 0x000000ff);
+
+        Serial.print(receivedTime);
 
       }
     }
