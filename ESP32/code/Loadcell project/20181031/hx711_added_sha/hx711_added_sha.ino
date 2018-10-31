@@ -59,7 +59,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
       uint8_t tmp[rxValue.length()];
-
+      Serial.print("콜백으로 들어온 데이터 길이 : ");  Serial.println(rxValue.length());
       if (rxValue.length() > 0) {
         Serial.println("*********");
         Serial.print("Received Value: ");
@@ -93,7 +93,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
           //          Serial.println(receivedTime);
           //          tv.tv_sec = receivedTime;
           //          settimeofday(&tv, NULL);
-        } else if (rxValue[0] == 0x02 && rxValue[1]  == 0x02 && rxValue[20] == 0x03) {
+        } else if (rxValue[0] == 0x02 && rxValue[1] == 0x02 && rxValue[19] == 0x03) {
           Serial.println("동기화 콜백 들어옴");
           secondPhase = true;
           for (int i = 0; i < rxValue.length(); i++) {
