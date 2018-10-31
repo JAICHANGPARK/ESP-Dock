@@ -40,7 +40,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
       digitalWrite(5, true);
     }
 };
-boolean timeSyncFlag = false;
+
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
