@@ -371,20 +371,62 @@ void readFileForBle(fs::FS &fs, const char * path) {
 
     tmpBuffer[count++] = (uint8_t)fileRead;
     if (fileRead == 0x0A) {
-         String tmp =  String((char)tmpBuffer[0]) + String((char)tmpBuffer[1]) + String((char)tmpBuffer[2]);
-         Serial.print("String parse : ");Serial.println(tmp);
-         int riceInt = tmp.toInt();
-         Serial.print("String to int: ");Serial.println(riceInt);
+
+      for (int k = 0; k < 8 ; k++) {
+        int buffIndex = 2 * k;  // 무선 통신으로 전송할 버퍼에 담을 인덱스
+        int index = 4 * k;     // sd에서 읽어온 데이터 처리 인덱스
+        String tmp =  String((char)tmpBuffer[index]) + String((char)tmpBuffer[index + 1]) + String((char)tmpBuffer[index + 2]);
+        Serial.print("String parse : "); Serial.println(tmp);
+        int riceInt = tmp.toInt();
+        Serial.print("String to int: "); Serial.println(riceInt);
+        syncBuffer[buffIndex] = (uint8_t)((riceInt << 8) & 0xff);
+        syncBuffer[buffIndex + 1] = (uint8_t)(riceInt & 0xff);
+        if (k == 6) {  //시작시간 처리
+          String tmp =  String((char)tmpBuffer[index]) + String((char)tmpBuffer[index + 1]) + String((char)tmpBuffer[index + 2])
+                        + String((char)tmpBuffer[index + 3]) + String((char)tmpBuffer[index + 4]) + String((char)tmpBuffer[index + 5])
+                        + String((char)tmpBuffer[index + 6]) + String((char)tmpBuffer[index + 7]) + String((char)tmpBuffer[index + 8])
+                        + String((char)tmpBuffer[index + 9]);
+          long startTimeValule = tmp.toInt();
+          Serial.print("time : String parse : "); Serial.println(tmp);
+          Serial.print("time String to int: "); Serial.println(startTimeValule);
+          syncBuffer[buffIndex] = (uint8_t)((startTimeValule >> 24) & 0xff);
+          syncBuffer[buffIndex + 1] = (uint8_t)((startTimeValule >> 16) & 0xff);
+          syncBuffer[buffIndex + 2] = (uint8_t)((startTimeValule >> 8) & 0xff);
+          syncBuffer[buffIndex + 3] = (uint8_t)((startTimeValule) & 0xff);
+
+        }
+        if (k > 6) { // 종료시간 처리
+          index += 7;
+          buffIndex += 2;
+          String tmp =  String((char)tmpBuffer[index]) + String((char)tmpBuffer[index + 1]) + String((char)tmpBuffer[index + 2])
+                        + String((char)tmpBuffer[index + 3]) + String((char)tmpBuffer[index + 4]) + String((char)tmpBuffer[index + 5])
+                        + String((char)tmpBuffer[index + 6]) + String((char)tmpBuffer[index + 7]) + String((char)tmpBuffer[index + 8])
+                        + String((char)tmpBuffer[index + 9]);
+          long endTimeValule = tmp.toInt();
+          Serial.print("time : String parse : "); Serial.println(tmp);
+          Serial.print("time String to int: "); Serial.println(endTimeValule);
+          syncBuffer[buffIndex] = (uint8_t)((endTimeValule >> 24) & 0xff);
+          syncBuffer[buffIndex + 1] = (uint8_t)((endTimeValule >> 16) & 0xff);
+          syncBuffer[buffIndex + 2] = (uint8_t)((endTimeValule >> 8) & 0xff);
+          syncBuffer[buffIndex + 3] = (uint8_t)((endTimeValule) & 0xff);
+        }
+      }
+
+      for (int i = 0 ; i < 20; i++) {
+        //        Serial.write(syncBuffer[i]); Serial.print("|");
+        Serial.print(syncBuffer[i], HEX); Serial.print("|");
+
+      }
       //      syncBuffer[0] = (uint8_t)((tmpBuffer[0] << 8) & 0xff);
       //      syncBuffer[1] = (uint8_t)((tmpBuffer[1] ) & 0xff);
       //      syncBuffer[2] = (uint8_t)((tmpBuffer[3] ) & 0xff);
-      for (int i = 0 ; i < count; i++) {
-        Serial.write(tmpBuffer[i]); Serial.print("|");
-        //        if (tmpBuffer[i] == 0x2C) {
-        //          i++;
-        //        }
-        
-      }
+      //      for (int i = 0 ; i < count; i++) {
+      //        Serial.write(tmpBuffer[i]); Serial.print("|");
+      //        //        if (tmpBuffer[i] == 0x2C) {
+      //        //          i++;
+      //        //        }
+      //
+      //      }
       Serial.println("한줄의 끝을 읽음");
       count = 0;
     }
