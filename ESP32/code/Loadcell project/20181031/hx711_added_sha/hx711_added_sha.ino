@@ -234,8 +234,13 @@ volatile long offset = 0;
 
 volatile unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 150;    // the debounce time; increase if the output flickers
-long startIntakeTime = 0;  // 섭취 시작 시간 
+long startIntakeTime = 0;  // 섭취 시작 시간
 volatile float rice = 0.0f;
+volatile float soup = 0.0f;
+volatile float sideA = 0.0f;
+volatile float sideB = 0.0f;
+volatile float sideC = 0.0f;
+volatile float sideD = 0.0f;
 
 boolean toggle = false;
 
@@ -329,6 +334,24 @@ void readFile(fs::FS &fs, const char * path) {
   Serial.print("Read from file: ");
   while (file.available()) {
     Serial.write(file.read());
+    //    file.readStringUntil('\n');
+  }
+  file.close();
+}
+
+void readFileForBle(fs::FS &fs, const char * path) {
+  Serial.printf("Reading file: %s\n", path);
+  File file = fs.open(path);
+  if (!file) {
+    Serial.println("Failed to open file for reading");
+    return;
+  }
+  uint8_t syncBuffer[20] = {};
+  Serial.print("Read from file: ");
+  while (file.available()) {
+    int fileRead = file.read();
+    Serial.print(fileRead);
+//    Serial.write(file.read());
     //    file.readStringUntil('\n');
   }
   file.close();
@@ -438,11 +461,17 @@ void loop() {
   if (button2.pressed) { //식사 종료
     Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
     rice = average(20);
+    soup = rice;
+    sideA = rice;
+    sideB = rice;
+    sideC = rice;
+    sideD = rice;
     gettimeofday(&mytime, NULL);
     //    Serial.print("times ==> "); Serial.println(mytime.tv_sec);
-    char x[30] = {};
+    char x[46] = {};
     //    char y[11];
-    sprintf(x, "%3.1f,%ld,%ld\n", rice, startIntakeTime, mytime.tv_sec);
+    sprintf(x, "%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%ld,%ld\n",
+            rice, soup, sideA, sideB, sideC, sideD, startIntakeTime, mytime.tv_sec);
 
     appendFile(SD, "/foo.txt", x);
     //    appendFile(SD, "/foo.txt", y);
@@ -484,7 +513,7 @@ void loop() {
 
       boolean checkAuth = false;
 
-      for (int i = 0; i < 17; i++) { // Hash 값 비교 과정 
+      for (int i = 0; i < 17; i++) { // Hash 값 비교 과정
         if (receivedCallback[i + 2] == shaResult[i]) {
           checkAuth = true;
         } else {
