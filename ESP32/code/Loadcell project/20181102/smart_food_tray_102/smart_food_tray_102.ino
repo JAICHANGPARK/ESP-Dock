@@ -40,6 +40,9 @@ boolean secondPhase = false;
 boolean checkAuth = false;
 
 boolean realtimeFirstPhase = false;
+boolean realtimeSecondPhase = false;
+boolean realTimeCheckAuth = false;
+boolean realTimeFinalPhase = false;
 
 volatile uint8_t receivedCallback[20] = {0,};
 uint32_t receivedTime = 0;
@@ -84,10 +87,27 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
         if (rxValue[0] == 0x02 && rxValue[1]  == 0x07 && rxValue[2] == 0x70 && rxValue[3] == 0x03) { // 실시간 전송 첫번째 인증과정
           realtimeFirstPhase = true;
-
+        } else if (rxValue[0] == 0x02 && rxValue[1]  == 0x71 && rxValue[19] == 0x03) { // 실시간 두번째 장비 인증
+          realtimeSecondPhase = true;
+          for (int i = 0; i < rxValue.length(); i++) {
+            receivedCallback[i] = rxValue[i];
+          }
         }
-
-        if (rxValue[0] == 0x02 && rxValue[1]  == 0x01 && rxValue[6] == 0x03) {
+        else if (rxValue[0] == 0x02 && rxValue[1]  == 0x72 && rxValue[6] == 0x03) { // 실시간 세번째 장비 인증
+          realTimeFinalPhase = true;
+          receivedTime = ((tmp[2] << 24) & 0xff000000)
+                         | ((tmp[3] << 16) & 0x00ff0000)
+                         | ((tmp[4] << 8) & 0x0000ff00)
+                         | (tmp[5] & 0x000000ff);
+          Serial.println(receivedTime);
+          tv.tv_sec = receivedTime;
+          settimeofday(&tv, NULL);
+        }
+        /**
+         * **********************************************************************
+           동기화 인증 콜백 처리과정 ---------------------------------------dreamwalker
+        */
+        if (rxValue[0] == 0x02 && rxValue[1]  == 0x01 && rxValue[6] == 0x03) { // 데이터 동기화 인증 시작
           firstPhase = true;
           receivedTime = ((tmp[2] << 24) & 0xff000000)
                          | ((tmp[3] << 16) & 0x00ff0000)
@@ -600,23 +620,55 @@ void loop() {
 
     else { //실시간 데이터 전송
 
-      if (realtimeFirstPhase) { // 첫번째 인증 과정
+      if (realtimeFirstPhase && !realtimeSecondPhase) { // 첫번째 인증 과정
+        Serial.println("실시간 인증 시작 ");
 
         uint8_t firstBuffer[3] = {0x02, 0x10, 0x03};
         pRealTimeCharacteristic->setValue(firstBuffer, 3);
         pRealTimeCharacteristic->notify();
-
         realtimeFirstPhase = false;
+
+      } else if (!realtimeFirstPhase && realtimeSecondPhase) {
+        Serial.println("실시간 장비 인증 시작  ");
+
+        mbedtls_md_context_t ctx;
+        mbedtls_md_type_t md_type = MBEDTLS_MD_SHA256;
+        const size_t payloadLength = strlen(payload);
+        mbedtls_md_init(&ctx);
+        mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
+        mbedtls_md_starts(&ctx);
+        mbedtls_md_update(&ctx, (const unsigned char *) payload, payloadLength);
+        mbedtls_md_finish(&ctx, shaResult);
+        mbedtls_md_free(&ctx);
+        for (int i = 0; i < 17; i++) { // Hash 값 비교 과정
+          if (receivedCallback[i + 2] == shaResult[i]) {
+            realTimeCheckAuth = true;
+          } else {
+            realTimeCheckAuth = false;
+          }
+        }
+        if (realTimeCheckAuth) {
+          Serial.println("실시간 장비 인증 성공");
+          uint8_t firstBuffer[3] = {0x02, 0x11, 0x03};
+          pRealTimeCharacteristic->setValue(firstBuffer, 3);
+          pRealTimeCharacteristic->notify();
+          realtimeSecondPhase = false;
+        } else {
+          uint8_t firstBuffer[3] = {0x02, 0x21, 0x03};
+          pRealTimeCharacteristic->setValue(firstBuffer, 3);
+          pRealTimeCharacteristic->notify();
+          Serial.println("실시간 장비 인증 실패");
+        }
+      } else if (!realtimeFirstPhase && !realtimeSecondPhase && realTimeCheckAuth && realTimeFinalPhase) { //모든 실시간 인증처리완료
+        Serial.println("시간 동기화 성공 ");
         uint8_t real_time[2];
         double tmp = average(20);
         uint16_t tmp_uint = (uint16_t)(tmp * 100);
         real_time[0] = (uint8_t)(tmp_uint >> 8 & 0xff);
         real_time[1] = (uint8_t)(tmp_uint & 0xff);
-        //    pTxCharacteristic->setValue(&real_time, 2);
         pRealTimeCharacteristic->setValue(real_time, 2);
         pRealTimeCharacteristic->notify();
         delay(1000);
-        
       }
     }
   } else { // 블루투스 연결 안됌 디스플레이 표기
