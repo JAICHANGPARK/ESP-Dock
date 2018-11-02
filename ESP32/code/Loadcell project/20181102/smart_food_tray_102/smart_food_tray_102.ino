@@ -35,14 +35,14 @@ uint8_t txValue = 0;
 struct timeval tv;
 struct timeval mytime;
 
-boolean firstPhase  = false;
-boolean secondPhase = false;
-boolean checkAuth = false;
+volatile boolean firstPhase  = false;
+volatile boolean secondPhase = false;
+volatile boolean checkAuth = false;
 
-boolean realtimeFirstPhase = false;
-boolean realtimeSecondPhase = false;
-boolean realTimeCheckAuth = false;
-boolean realTimeFinalPhase = false;
+volatile boolean realtimeFirstPhase = false;
+volatile boolean realtimeSecondPhase = false;
+volatile boolean realTimeCheckAuth = false;
+volatile boolean realTimeFinalPhase = false;
 
 volatile uint8_t receivedCallback[20] = {0,};
 uint32_t receivedTime = 0;
@@ -59,6 +59,15 @@ class MyServerCallbacks: public BLEServerCallbacks {
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
       digitalWrite(5, true);
+      //모든 플레그 변수 초기화 
+      firstPhase  = false;
+      secondPhase = false;
+      checkAuth = false;
+
+      realtimeFirstPhase = false;
+      realtimeSecondPhase = false;
+      realTimeCheckAuth = false;
+      realTimeFinalPhase = false;
     }
 };
 
@@ -87,13 +96,14 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
         if (rxValue[0] == 0x02 && rxValue[1]  == 0x07 && rxValue[2] == 0x70 && rxValue[3] == 0x03) { // 실시간 전송 첫번째 인증과정
           realtimeFirstPhase = true;
-        } else if (rxValue[0] == 0x02 && rxValue[1]  == 0x71 && rxValue[19] == 0x03) { // 실시간 두번째 장비 인증
+        }
+        else if (rxValue[0] == 0x02 && rxValue[1] == 0x71 && rxValue[19] == 0x03) { // 실시간 두번째 장비 인증
           realtimeSecondPhase = true;
           for (int i = 0; i < rxValue.length(); i++) {
             receivedCallback[i] = rxValue[i];
           }
         }
-        else if (rxValue[0] == 0x02 && rxValue[1]  == 0x72 && rxValue[6] == 0x03) { // 실시간 세번째 장비 인증
+        else if (rxValue[0] == 0x02 && rxValue[1] == 0x72 && rxValue[6] == 0x03) { // 실시간 세번째 장비 인증
           realTimeFinalPhase = true;
           receivedTime = ((tmp[2] << 24) & 0xff000000)
                          | ((tmp[3] << 16) & 0x00ff0000)
@@ -620,7 +630,7 @@ void loop() {
 
     else { //실시간 데이터 전송
 
-      if (realtimeFirstPhase && !realtimeSecondPhase) { // 첫번째 인증 과정
+      if (realtimeFirstPhase && !realtimeSecondPhase && !realTimeCheckAuth && !realTimeFinalPhase) { // 첫번째 인증 과정
         Serial.println("실시간 인증 시작 ");
 
         uint8_t firstBuffer[3] = {0x02, 0x10, 0x03};
@@ -628,7 +638,7 @@ void loop() {
         pRealTimeCharacteristic->notify();
         realtimeFirstPhase = false;
 
-      } else if (!realtimeFirstPhase && realtimeSecondPhase) {
+      } else if (!realtimeFirstPhase && realtimeSecondPhase && !realTimeCheckAuth && !realTimeFinalPhase) {
         Serial.println("실시간 장비 인증 시작  ");
 
         mbedtls_md_context_t ctx;
@@ -645,22 +655,31 @@ void loop() {
             realTimeCheckAuth = true;
           } else {
             realTimeCheckAuth = false;
+            return;
           }
         }
+
         if (realTimeCheckAuth) {
           Serial.println("실시간 장비 인증 성공");
-          uint8_t firstBuffer[3] = {0x02, 0x11, 0x03};
-          pRealTimeCharacteristic->setValue(firstBuffer, 3);
+          uint8_t successBuffer[3] = {0x02, 0x11, 0x03};
+          pRealTimeCharacteristic->setValue(successBuffer, 3);
           pRealTimeCharacteristic->notify();
           realtimeSecondPhase = false;
         } else {
-          uint8_t firstBuffer[3] = {0x02, 0x21, 0x03};
-          pRealTimeCharacteristic->setValue(firstBuffer, 3);
+          uint8_t failedBuffer[3] = {0x02, 0x21, 0x03};
+          pRealTimeCharacteristic->setValue(failedBuffer, 3);
           pRealTimeCharacteristic->notify();
           Serial.println("실시간 장비 인증 실패");
         }
       } else if (!realtimeFirstPhase && !realtimeSecondPhase && realTimeCheckAuth && realTimeFinalPhase) { //모든 실시간 인증처리완료
-        Serial.println("시간 동기화 성공 ");
+        Serial.println("시간 동기화 성공과 모든 실시간 처리 인증과정 완료 ");
+        realTimeCheckAuth = false;
+        uint8_t successBuffer[3] = {0x02, 0x12, 0x03};
+        pRealTimeCharacteristic->setValue(successBuffer, 3);
+        pRealTimeCharacteristic->notify();
+
+      } else if (!realtimeFirstPhase && !realtimeSecondPhase && !realTimeCheckAuth && realTimeFinalPhase) {
+
         uint8_t real_time[2];
         double tmp = average(20);
         uint16_t tmp_uint = (uint16_t)(tmp * 100);
@@ -669,6 +688,7 @@ void loop() {
         pRealTimeCharacteristic->setValue(real_time, 2);
         pRealTimeCharacteristic->notify();
         delay(1000);
+
       }
     }
   } else { // 블루투스 연결 안됌 디스플레이 표기
