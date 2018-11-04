@@ -153,7 +153,7 @@ double average(int count, int part) {
   } else if (part == 1) {
     for (int i = 0; i < count ; i++) {
       tmp = scale_p2.value();
-      value += (scale_p2.value() - offset) / 433.8f;
+      value += (scale_p2.value() - offset_p1a) / 433.8f;
     }
   } else {
 
@@ -173,7 +173,7 @@ double average_2(int count , int part) {
   } else if (part == 1) {
     for (int i = 0; i < count ; i++) {
       tmp = scale_p2.value_b();
-      value += (scale_p2.value_b() - offset_b) / 112.12f;
+      value += (scale_p2.value_b() - offset_p1b) / 112.12f;
     }
   }
 
@@ -275,7 +275,7 @@ void readPartOne() {
   double tmp = 0;
   tmp = scale_p2.value();
   val = scale_p2.value();
-  Serial.print("offset ==> "); Serial.print(offset_p1a);
+  Serial.print("offset_p1a ==> "); Serial.print(offset_p1a);
   Serial.print(" | raw value 1: "); Serial.print(val);
   Serial.print(" | raw-offset: "); Serial.print(val - offset_p1a);
   Serial.print(" | cal :");  Serial.print((val - offset_p1a) / 433.8f, 1);
@@ -286,7 +286,7 @@ void readPartOne() {
 
   tmp = scale_p2.value_b();
   val2 = scale_p2.value_b();
-  Serial.print("offset b ==> "); Serial.print(offset_p1b);
+  Serial.print("offset_p1b ==> "); Serial.print(offset_p1b);
   Serial.print(" | raw value 2: "); Serial.print(val2);
   Serial.print(" | raw-offset: "); Serial.print(val2 - offset_p1b);
   Serial.print(" | cal : ");  Serial.print((val2 - offset_p1b) / 112.12f, 1);
