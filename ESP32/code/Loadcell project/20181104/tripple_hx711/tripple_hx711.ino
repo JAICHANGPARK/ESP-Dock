@@ -7,8 +7,6 @@
 #define PART_TWO_CHANNAL_A_SCALE 428.97f
 #define PART_TWO_CHANNAL_B_SCALE 106.68f
 
-
-
 class Hx711
 {
   public:
