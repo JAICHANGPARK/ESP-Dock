@@ -136,54 +136,166 @@ Hx711 scale(26, 25);
 long val, val2 = 0;
 volatile float count = 0;
 volatile long offset = 0;
+volatile long offset_b = 0;
 
-double average(int count) {
+Hx711 scale_p2(14, 27);
+volatile long offset_p1a = 0;
+volatile long offset_p1b = 0;
+
+double average(int count, int part) {
   double value = 0;
-  for (int i = 0; i < count ; i++) {
-    value += (scale.value() - offset) / 433.8f;
+  double tmp = 0;
+  if (part == 0) {
+    for (int i = 0; i < count ; i++) {
+      tmp = scale.value();
+      value += (scale.value() - offset) / 433.8f;
+    }
+  } else if (part == 1) {
+    for (int i = 0; i < count ; i++) {
+      tmp = scale_p2.value();
+      value += (scale_p2.value() - offset) / 433.8f;
+    }
+  } else {
+
   }
+
   return value / (double)count;
+}
+
+double average_2(int count , int part) {
+  double value = 0;
+  double tmp = 0;
+  if (part == 0) {
+    for (int i = 0; i < count ; i++) {
+      tmp = scale.value_b();
+      value += (scale.value_b() - offset_b) / 112.12f;
+    }
+  } else if (part == 1) {
+    for (int i = 0; i < count ; i++) {
+      tmp = scale_p2.value_b();
+      value += (scale_p2.value_b() - offset_b) / 112.12f;
+    }
+  }
+
+  return value / (double)count;
+}
+
+void calOffsetPartZero() {
+  double tmp = 0;
+  // put your setup code here, to run once:
+  for (int i = 0; i < 10; i++) {
+    count += 1;
+    tmp = scale.value();
+    offset += scale.value();
+  }
+  offset  = offset / count;
+  count = 0;
+
+  scale.power_down();              // put the ADC in sleep mode
+  delayMicroseconds(200);
+  scale.power_up();
+
+  for (int i = 0; i < 10; i++) {
+    count += 1;
+    tmp = scale.value_b();
+    offset_b += scale.value_b();
+  }
+  offset_b  = offset_b / count;
+  count = 0;
+
+  scale.power_down();              // put the ADC in sleep mode
+  delayMicroseconds(200);
+  scale.power_up();
+}
+
+void calOffsetPartOne() {
+
+  double tmp = 0;
+  // put your setup code here, to run once:
+  for (int i = 0; i < 10; i++) {
+    count += 1;
+    tmp = scale_p2.value();
+    offset_p1a += scale_p2.value();
+  }
+  offset_p1a  = offset_p1a / count;
+  count = 0;
+
+  scale_p2.power_down();              // put the ADC in sleep mode
+  delayMicroseconds(200);
+  scale_p2.power_up();
+
+  for (int i = 0; i < 10; i++) {
+    count += 1;
+    tmp = scale_p2.value_b();
+    offset_p1b += scale_p2.value_b();
+  }
+  offset_p1b  = offset_p1b / count;
+  count = 0;
+
+  scale_p2.power_down();              // put the ADC in sleep mode
+  delayMicroseconds(200);
+  scale_p2.power_up();
 }
 
 void setup() {
 
   rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
   Serial.begin(115200);
+  calOffsetPartZero();
+  calOffsetPartOne();
 
-  // put your setup code here, to run once:
-  for (int i = 0; i < 10; i++) {
-    count += 1;
-    offset += scale.value();
-  }
-  offset  = offset / count;
-  count = 0;
+
+}
+void readPartZero() {
+  double tmp = 0;
+  tmp = scale.value();
+  val = scale.value();
+  Serial.print("offset ==> "); Serial.print(offset);
+  Serial.print(" | raw value 1: "); Serial.print(val);
+  Serial.print(" | raw-offset: "); Serial.print(val - offset);
+  Serial.print(" | cal :");  Serial.print((val - offset) / 433.8f, 1);
+  Serial.print(" | averages :  "); Serial.println(average(20, 0), 1);
+  scale.power_down();              // put the ADC in sleep mode
+  delayMicroseconds(200);
+  scale.power_up();
+
+  tmp = scale.value_b();
+  val2 = scale.value_b();
+  Serial.print("offset b ==> "); Serial.print(offset_b);
+  Serial.print(" | raw value 2: "); Serial.print(val2);
+  Serial.print(" | raw-offset: "); Serial.print(val2 - offset_b);
+  Serial.print(" | cal : ");  Serial.print((val2 - offset_b) / 112.12f, 1);
+  Serial.print(" | averages :  "); Serial.println(average_2(20, 0), 1);
+  scale.power_down();              // put the ADC in sleep mode
+  delayMicroseconds(200);
+  scale.power_up();
 }
 
-void loop() {
+void readPartOne() {
+  double tmp = 0;
+  tmp = scale_p2.value();
+  val = scale_p2.value();
+  Serial.print("offset ==> "); Serial.print(offset_p1a);
+  Serial.print(" | raw value 1: "); Serial.print(val);
+  Serial.print(" | raw-offset: "); Serial.print(val - offset_p1a);
+  Serial.print(" | cal :");  Serial.print((val - offset_p1a) / 433.8f, 1);
+  Serial.print(" | averages :  "); Serial.println(average(20, 1), 1);
+  scale_p2.power_down();              // put the ADC in sleep mode
+  delayMicroseconds(200);
+  scale_p2.power_up();
 
-  Serial.print("offset ==> "); Serial.print(offset); Serial.print(" | ");
-  //Serial.print(scale.gram() * 2, 1);
-  //채널 a의 오프셋을 맞추는 과정
-  val = scale.value();
-  Serial.print("raw value 1: "); Serial.print(val);
-  //  val2 = scale.value_b();
-  //  Serial.print(" | raw value 2: "); Serial.print(val2);
-  Serial.print(" | raw-offset: "); Serial.print(val - offset);
-  Serial.print(" | ");  Serial.print((val - offset) / 433.8f, 1);
-  Serial.print(" | averages :  "); Serial.println(average(20), 1);
-  scale.power_down();              // put the ADC in sleep mode
-  delay(1000);
-  scale.power_up();
-
-  val2 = scale.value_b();
+  tmp = scale_p2.value_b();
+  val2 = scale_p2.value_b();
+  Serial.print("offset b ==> "); Serial.print(offset_p1b);
   Serial.print(" | raw value 2: "); Serial.print(val2);
-  Serial.print(" | raw-offset: "); Serial.print(val - offset);
-  Serial.print(" | ");  Serial.print((val - offset) / 433.8f, 1);
-  Serial.print(" | averages :  "); Serial.println(average(20), 1);
-  scale.power_down();              // put the ADC in sleep mode
-  delay(1000);
-  scale.power_up();
-
-
-
+  Serial.print(" | raw-offset: "); Serial.print(val2 - offset_p1b);
+  Serial.print(" | cal : ");  Serial.print((val2 - offset_p1b) / 112.12f, 1);
+  Serial.print(" | averages :  "); Serial.println(average_2(20, 1), 1);
+  scale_p2.power_down();              // put the ADC in sleep mode
+  delayMicroseconds(200);
+  scale_p2.power_up();
+}
+void loop() {
+  readPartZero();
+  readPartOne();
 }
