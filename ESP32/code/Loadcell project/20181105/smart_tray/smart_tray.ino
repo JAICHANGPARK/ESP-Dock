@@ -321,7 +321,10 @@ volatile float sideD = 0.0f;
 
 float startValueRice = 0.0f;
 float startValueSoup = 0.0f;
-
+float startValueSideA = 0.0f;
+float startValueSideB = 0.0f;
+float startValueSideC = 0.0f;
+float startValueSideD = 0.0f;
 
 boolean toggle = false;
 
@@ -735,7 +738,7 @@ void loop() {
   if (button2.pressed) { //식사 종료
     Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
 
-    readAllValue();
+    readAllValue(1);
     //    rice = average(20);
     //    soup = rice;
     //    sideA = rice;
@@ -764,8 +767,9 @@ void loop() {
     startIntakeTime = mytime.tv_sec;
     Serial.print("식사 시작 : 시작시간 ==> ");
     Serial.println(startIntakeTime);
+    
     // 중량 정보 저장
-
+    readAllValue(0);
     button3.pressed = false;
   }
 
@@ -885,7 +889,7 @@ void loop() {
     //    Serial.print("times ==> "); Serial.println(mytime.tv_sec);
     //    Serial.println(digitalRead(34));
     //    String dis = String(average(20));
-    readAllValue();
+    readAllValue(1);
 
     display.clear();
     display.setFont(ArialMT_Plain_10);
@@ -938,93 +942,162 @@ void loop() {
   volatile float sideC = 0.0f;
   volatile float sideD = 0.0f;
 */
-void readAllValue() {
+void readAllValue(int readType) {
   long dummy = 0;
-  //----------------------------------------------------------------- 파트 0 값 읽기 처리하기
-  scalePartZero.power_up();
-  dummy = scalePartZero.value();
-  valuePartZeroA = scalePartZero.value();
-  Serial.print("p0 offset a ==> "); Serial.print(offset_p0a);
-  Serial.print(" | raw value 1: "); Serial.print(valuePartZeroA);
-  Serial.print(" | raw-offset: "); Serial.print(valuePartZeroA - offset_p0a);
-  Serial.print(" | cal : ");  Serial.print((valuePartZeroA - offset_p0a) / PART_ZERO_CHANNAL_A_SCALE, 1);
-  rice = average(20);
-  stringRice = String(rice);
-  //  Serial.print(" | averages :  "); Serial.println(average(20), 1);
-  Serial.print(" | averages :  "); Serial.println(stringRice);
+  if (readType == 0) { // 시작 시 호출
 
-  scalePartZero.power_down();              // put the ADC in sleep mode
-  delayMicroseconds(1000);
-  scalePartZero.power_up();
+    //float startValueRice = 0.0f;
+    //float startValueSoup = 0.0f;
+    //float startValueSideA = 0.0f;
+    //float startValueSideB = 0.0f;
+    //float startValueSideC = 0.0f;
+    //float startValueSideD = 0.0f;
 
-  dummy = scalePartZero.value_b();
-  valuePartZeroB = scalePartZero.value_b();
-  Serial.print("p0 offset b ==> "); Serial.print(offset_p0b);
-  Serial.print(" | raw value 1: "); Serial.print(valuePartZeroB);
-  Serial.print(" | raw-offset: "); Serial.print(valuePartZeroB - offset_p0b);
-  Serial.print(" | cal : ");  Serial.print((valuePartZeroB - offset_p0b) / PART_ZERO_CHANNAL_B_SCALE, 1);
-  sideA = average_2(20);
-  stringSideA = String(sideA);
-  Serial.print(" | averages :  "); Serial.println(stringSideA);
+    //----------------------------------------------------------------- 파트 0 값 읽기 처리하기
+    scalePartZero.power_up();
+    dummy = scalePartZero.value();
+    valuePartZeroA = scalePartZero.value();
+    startValueRice = average(20);
+    Serial.print(" start rice averages :  "); Serial.println(startValueRice, 1);
 
-  scalePartZero.power_down();              // put the ADC in sleep mode
-  delayMicroseconds(1000);
+    scalePartZero.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
+    scalePartZero.power_up();
 
-  //----------------------------------------------------------------------
-  //------------------------------------------------------------------------ 파트 1 값 읽기 처리하기
-  scalePartOne.power_up();
-  dummy = scalePartOne.value();
-  valuePartOneA = scalePartOne.value();
-  Serial.print("p1 offset a ==> "); Serial.print(offset_p1a);
-  Serial.print(" | raw value 1: "); Serial.print(valuePartOneA);
-  Serial.print(" | raw-offset: "); Serial.print(valuePartOneA - offset_p1a);
-  Serial.print(" | cal : ");  Serial.print((valuePartOneA - offset_p1a) / PART_ONE_CHANNAL_A_SCALE, 1);
-  soup = average_p1a(20);
-  stringSoup = String(soup);
-  Serial.print(" | averages :  "); Serial.println(stringSoup);
+    dummy = scalePartZero.value_b();
+    valuePartZeroB = scalePartZero.value_b();
+    startValueSideA = average_2(20);
+    Serial.print(" start SideA averages :  "); Serial.println(startValueSideA, 1);
+    scalePartZero.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
 
-  scalePartOne.power_down();              // put the ADC in sleep mode
-  delayMicroseconds(1000);
-  scalePartOne.power_up();
+    //------------------------------------------------------------------------ 파트 1 값 읽기 처리하기
+    scalePartOne.power_up();
+    dummy = scalePartOne.value();
+    valuePartOneA = scalePartOne.value();
+    startValueSoup = average_p1a(20);
+    Serial.print(" start Soup averages :  "); Serial.println(startValueSoup, 1);
 
-  dummy = scalePartOne.value_b();
-  valuePartOneB = scalePartOne.value_b();
-  Serial.print("p1 offset b ==> "); Serial.print(offset_p1b);
-  Serial.print(" | raw value 1: "); Serial.print(valuePartOneB);
-  Serial.print(" | raw-offset: "); Serial.print(valuePartOneB - offset_p1b);
-  Serial.print(" | cal : ");  Serial.print((valuePartOneB - offset_p1b) / PART_ONE_CHANNAL_B_SCALE, 1);
-  sideB = average_p1b(20);
-  stringSideB = String(sideB);
-  Serial.print(" | averages :  "); Serial.println(stringSideB);
-  scalePartOne.power_down();              // put the ADC in sleep mode
-  delayMicroseconds(1000);
+    scalePartOne.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
+    scalePartOne.power_up();
 
-  //------------------------------------------------------------------------ 파트 2 값 읽기 처리하기
-  scalePartTwo.power_up();
-  dummy = scalePartTwo.value();
-  valuePartTwoA = scalePartTwo.value();
-  Serial.print("p2 offset a ==> "); Serial.print(offset_p2a);
-  Serial.print(" | raw value 1: "); Serial.print(valuePartTwoA);
-  Serial.print(" | raw-offset: "); Serial.print(valuePartTwoA - offset_p2a);
-  Serial.print(" | cal : ");  Serial.print((valuePartTwoA - offset_p2a) / PART_TWO_CHANNAL_A_SCALE, 1);
-  sideC = average_p2a(20);
-  stringSideC = String(sideC);
-  Serial.print(" | averages :  "); Serial.println(stringSideC);
+    dummy = scalePartOne.value_b();
+    valuePartOneB = scalePartOne.value_b();
 
-  scalePartTwo.power_down();              // put the ADC in sleep mode
-  delayMicroseconds(1000);  //1000us --> 1ms
-  scalePartTwo.power_up();
+    startValueSideB = average_p1b(20);
+    Serial.print(" start SideB averages :  "); Serial.println(startValueSideB, 1);
+    scalePartOne.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
 
-  dummy = scalePartTwo.value_b();
-  valuePartTwoB = scalePartTwo.value_b();
-  Serial.print("p2 offset b ==> "); Serial.print(offset_p2b);
-  Serial.print(" | raw value 1: "); Serial.print(valuePartTwoB);
-  Serial.print(" | raw-offset: "); Serial.print(valuePartTwoB - offset_p2b);
-  Serial.print(" | cal : ");  Serial.print((valuePartTwoB - offset_p2b) / PART_TWO_CHANNAL_B_SCALE, 1);
-  sideD  = average_p2b(20);
-  stringSideD = String(sideD);
-  Serial.print(" | averages :  "); Serial.println(stringSideD);
-  scalePartTwo.power_down();              // put the ADC in sleep mode
-  delayMicroseconds(1000);
+    //------------------------------------------------------------------------ 파트 2 값 읽기 처리하기
+    scalePartTwo.power_up();
+    dummy = scalePartTwo.value();
+    valuePartTwoA = scalePartTwo.value();
+    startValueSideC = average_p2a(20);
+    Serial.print(" start SideC averages :  "); Serial.println(startValueSideC, 1);
+
+    scalePartTwo.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);  //1000us --> 1ms
+    scalePartTwo.power_up();
+
+    dummy = scalePartTwo.value_b();
+    valuePartTwoB = scalePartTwo.value_b();
+    startValueSideD  = average_p2b(20);
+
+    scalePartTwo.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
+    Serial.print(" start SideD averages :  "); Serial.println(startValueSideD, 1);
+  } else {
+
+    //----------------------------------------------------------------- 파트 0 값 읽기 처리하기
+    scalePartZero.power_up();
+    dummy = scalePartZero.value();
+    valuePartZeroA = scalePartZero.value();
+    Serial.print("p0 offset a ==> "); Serial.print(offset_p0a);
+    Serial.print(" | raw value 1: "); Serial.print(valuePartZeroA);
+    Serial.print(" | raw-offset: "); Serial.print(valuePartZeroA - offset_p0a);
+    Serial.print(" | cal : ");  Serial.print((valuePartZeroA - offset_p0a) / PART_ZERO_CHANNAL_A_SCALE, 1);
+    rice = average(20);
+    stringRice = String(rice);
+    //  Serial.print(" | averages :  "); Serial.println(average(20), 1);
+    Serial.print(" | averages :  "); Serial.println(stringRice);
+
+    scalePartZero.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
+    scalePartZero.power_up();
+
+    dummy = scalePartZero.value_b();
+    valuePartZeroB = scalePartZero.value_b();
+    Serial.print("p0 offset b ==> "); Serial.print(offset_p0b);
+    Serial.print(" | raw value 1: "); Serial.print(valuePartZeroB);
+    Serial.print(" | raw-offset: "); Serial.print(valuePartZeroB - offset_p0b);
+    Serial.print(" | cal : ");  Serial.print((valuePartZeroB - offset_p0b) / PART_ZERO_CHANNAL_B_SCALE, 1);
+    sideA = average_2(20);
+    stringSideA = String(sideA);
+    Serial.print(" | averages :  "); Serial.println(stringSideA);
+
+    scalePartZero.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
+
+    //----------------------------------------------------------------------
+    //------------------------------------------------------------------------ 파트 1 값 읽기 처리하기
+    scalePartOne.power_up();
+    dummy = scalePartOne.value();
+    valuePartOneA = scalePartOne.value();
+    Serial.print("p1 offset a ==> "); Serial.print(offset_p1a);
+    Serial.print(" | raw value 1: "); Serial.print(valuePartOneA);
+    Serial.print(" | raw-offset: "); Serial.print(valuePartOneA - offset_p1a);
+    Serial.print(" | cal : ");  Serial.print((valuePartOneA - offset_p1a) / PART_ONE_CHANNAL_A_SCALE, 1);
+    soup = average_p1a(20);
+    stringSoup = String(soup);
+    Serial.print(" | averages :  "); Serial.println(stringSoup);
+
+    scalePartOne.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
+    scalePartOne.power_up();
+
+    dummy = scalePartOne.value_b();
+    valuePartOneB = scalePartOne.value_b();
+    Serial.print("p1 offset b ==> "); Serial.print(offset_p1b);
+    Serial.print(" | raw value 1: "); Serial.print(valuePartOneB);
+    Serial.print(" | raw-offset: "); Serial.print(valuePartOneB - offset_p1b);
+    Serial.print(" | cal : ");  Serial.print((valuePartOneB - offset_p1b) / PART_ONE_CHANNAL_B_SCALE, 1);
+    sideB = average_p1b(20);
+    stringSideB = String(sideB);
+    Serial.print(" | averages :  "); Serial.println(stringSideB);
+    scalePartOne.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
+
+    //------------------------------------------------------------------------ 파트 2 값 읽기 처리하기
+    scalePartTwo.power_up();
+    dummy = scalePartTwo.value();
+    valuePartTwoA = scalePartTwo.value();
+    Serial.print("p2 offset a ==> "); Serial.print(offset_p2a);
+    Serial.print(" | raw value 1: "); Serial.print(valuePartTwoA);
+    Serial.print(" | raw-offset: "); Serial.print(valuePartTwoA - offset_p2a);
+    Serial.print(" | cal : ");  Serial.print((valuePartTwoA - offset_p2a) / PART_TWO_CHANNAL_A_SCALE, 1);
+    sideC = average_p2a(20);
+    stringSideC = String(sideC);
+    Serial.print(" | averages :  "); Serial.println(stringSideC);
+
+    scalePartTwo.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);  //1000us --> 1ms
+    scalePartTwo.power_up();
+
+    dummy = scalePartTwo.value_b();
+    valuePartTwoB = scalePartTwo.value_b();
+    Serial.print("p2 offset b ==> "); Serial.print(offset_p2b);
+    Serial.print(" | raw value 1: "); Serial.print(valuePartTwoB);
+    Serial.print(" | raw-offset: "); Serial.print(valuePartTwoB - offset_p2b);
+    Serial.print(" | cal : ");  Serial.print((valuePartTwoB - offset_p2b) / PART_TWO_CHANNAL_B_SCALE, 1);
+    sideD  = average_p2b(20);
+    stringSideD = String(sideD);
+    Serial.print(" | averages :  "); Serial.println(stringSideD);
+    scalePartTwo.power_down();              // put the ADC in sleep mode
+    delayMicroseconds(1000);
+
+  }
+
 }
 
