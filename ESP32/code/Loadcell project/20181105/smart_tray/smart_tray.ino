@@ -746,6 +746,13 @@ void loop() {
     //    sideC = rice;
     //    sideD = rice;
     gettimeofday(&mytime, NULL);
+    rice = startValueRice - rice;
+    soup =  startValueSoup - soup;
+    sideA = startValueSideA - sideA;
+    sideB = startValueSideA - sideB;
+    sideC = startValueSideA - sideC;
+    sideD = startValueSideA - sideD;
+    
     //    Serial.print("times ==> "); Serial.println(mytime.tv_sec);
     char x[46] = {};
     //    char y[11];
@@ -767,7 +774,7 @@ void loop() {
     startIntakeTime = mytime.tv_sec;
     Serial.print("식사 시작 : 시작시간 ==> ");
     Serial.println(startIntakeTime);
-    
+
     // 중량 정보 저장
     readAllValue(0);
     button3.pressed = false;
