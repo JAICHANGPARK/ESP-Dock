@@ -739,12 +739,7 @@ void loop() {
     Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
 
     readAllValue(1);
-    //    rice = average(20);
-    //    soup = rice;
-    //    sideA = rice;
-    //    sideB = rice;
-    //    sideC = rice;
-    //    sideD = rice;
+
     gettimeofday(&mytime, NULL);
     rice = startValueRice - rice;
     soup =  startValueSoup - soup;
@@ -752,17 +747,14 @@ void loop() {
     sideB = startValueSideA - sideB;
     sideC = startValueSideA - sideC;
     sideD = startValueSideA - sideD;
-    
-    //    Serial.print("times ==> "); Serial.println(mytime.tv_sec);
+
     char x[46] = {};
-    //    char y[11];
+    
     sprintf(x, "%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%ld,%ld\n",
             rice, soup, sideA, sideB, sideC, sideD, startIntakeTime, mytime.tv_sec);
 
     appendFile(SD, "/log.csv", x);
-    //    appendFile(SD, "/foo.txt", y);
-    //    readFile(SD, "/foo.txt");
-
+    
     readFileForBle(SD, "/log.csv");
     button2.pressed = false;
   }
