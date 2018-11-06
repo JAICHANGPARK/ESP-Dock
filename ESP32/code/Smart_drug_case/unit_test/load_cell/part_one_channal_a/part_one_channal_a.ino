@@ -161,7 +161,7 @@ void setup() {
   rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
   Serial.begin(115200);
 
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 20; i++) {
     count += 1;
     Serial.print(" init offset_b :  "); Serial.println(scale.value());
     offset_b += scale.value();
@@ -183,9 +183,10 @@ void loop() {
   val2 = scale.value();
   Serial.print("offset ==> "); Serial.print(offset_b);
   Serial.print(" | raw value 2: "); Serial.print(val2);
-  Serial.print(" | raw-offset: "); Serial.print(val2 - offset_b);
-  Serial.print(" | cal : ");  Serial.print((val2 - offset_b) / 112.12f, 1);
+  Serial.print(" | raw-offset: "); Serial.print(-(val2 - offset_b));
+  Serial.print(" | cal : ");  Serial.print(-(val2 - offset_b) / 112.12f, 1);
   Serial.print(" | averages :  "); Serial.println(average(20), 1);
+
   scale.power_down();              // put the ADC in sleep mode
   delayMicroseconds(1000);
   scale.power_up();
