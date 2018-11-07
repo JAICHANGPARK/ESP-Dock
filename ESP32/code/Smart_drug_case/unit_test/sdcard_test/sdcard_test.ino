@@ -3,6 +3,9 @@
 #include "SPI.h"
 
 
+
+boolean sdTestFlag = false;
+
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
   Serial.printf("Listing directory: %s\n", dirname);
 
@@ -50,10 +53,10 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
   file.close();
 }
 
-void createFile(fs::FS &fs, const char * path, const char * message) {
+void createFile(fs::FS &fs, const char * path) {
   Serial.printf("Writing file: %s\n", path);
 
-  File file = fs.open(path);
+  File file = fs.open(path, FILE_WRITE);
   if (!file) {
     Serial.println("Failed to open file for writing");
     return;
@@ -61,25 +64,25 @@ void createFile(fs::FS &fs, const char * path, const char * message) {
     Serial.println("Create Successed to open file for writing");
     return;
   }
-
   file.close();
 }
 
-boolean sdTestFlag = false;
 boolean initSDCard() {
   if (!SD.begin(2)) {
     Serial.println("Card Mount Failed");
-    sdTestFlag = false;
-    return;
+    return false;
   } else {
-    sdTestFlag = true;
+    return true;
   }
   uint8_t cardType = SD.cardType();
   if (cardType == CARD_NONE) {
     Serial.println("No SD card attached");
-    return;
+    return false;
+  } else {
+    return true;
   }
   Serial.print("SD Card Type: ");
+
   if (cardType == CARD_MMC) {
     Serial.println("MMC");
   } else if (cardType == CARD_SD) {
@@ -90,7 +93,6 @@ boolean initSDCard() {
     Serial.println("UNKNOWN");
   }
 
-  return sdTestFlag;
 
 }
 void setup() {
