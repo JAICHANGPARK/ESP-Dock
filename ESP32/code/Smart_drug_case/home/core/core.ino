@@ -4,7 +4,14 @@
 
 #include "soc/rtc.h"
 
-#define LOADCELL_SCALE  1914.76f
+#include <sys/time.h>
+
+
+#define LOADCELL_SCALE  1801.58f
+
+struct timeval tv;
+struct timeval mytime;
+
 class Hx711
 {
   public:
@@ -262,6 +269,10 @@ void setup() {
   scale.power_down();              // put the ADC in sleep mode
   delayMicroseconds(1000);
   scale.power_up();
+
+  tv.tv_sec = 1541574461;
+  settimeofday(&tv, NULL);
+  
 }
 
 
@@ -277,5 +288,9 @@ void loop() {
   scale.power_down();              // put the ADC in sleep mode
   delayMicroseconds(1000);
   scale.power_up();
+
+  gettimeofday(&mytime, NULL);
+  Serial.println(mytime.tv_sec);
+  
 
 }
