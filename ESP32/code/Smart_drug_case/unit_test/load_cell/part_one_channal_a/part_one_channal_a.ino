@@ -1,4 +1,4 @@
-t#include "soc/rtc.h"
+#include "soc/rtc.h"
 
 class Hx711
 {
@@ -141,7 +141,7 @@ volatile long offset_b = 0;
 double average(int count) {
   double value = 0;
   for (int i = 0; i < count ; i++) {
-    value += (scale.value() - offset) / 433.8f;
+    value += (scale.value() - offset) / 1300.21f;
   }
   return value / (double)count;
 }
@@ -151,7 +151,7 @@ double average_2(int count) {
   double tmp = 0;
   for (int i = 0; i < count ; i++) {
     tmp = scale.value_b();
-    value += (scale.value_b() - offset_b) / 112.12f;
+    value += (scale.value_b() - offset_b) / 1300.21f;
   }
   return value / (double)count;
 }
@@ -183,13 +183,12 @@ void loop() {
   val2 = scale.value();
   Serial.print("offset ==> "); Serial.print(offset_b);
   Serial.print(" | raw value 2: "); Serial.print(val2);
-  Serial.print(" | raw-offset: "); Serial.print(-(val2 - offset_b));
-  Serial.print(" | cal : ");  Serial.print(-(val2 - offset_b) / 112.12f, 1);
-  Serial.print(" | averages :  "); Serial.println(average(20), 1);
+  Serial.print(" | raw-offset: "); Serial.print((val2 - offset_b));
+  Serial.print(" | cal : ");  Serial.print((val2 - offset_b) / 1300.21f,1);
+  Serial.print(" | averages :  "); Serial.println(average_2(20), 1);
 
   scale.power_down();              // put the ADC in sleep mode
   delayMicroseconds(1000);
   scale.power_up();
-
 
 }
