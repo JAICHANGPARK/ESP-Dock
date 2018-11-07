@@ -1,14 +1,31 @@
+#include <Arduino.h>
+
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
 #include "soc/rtc.h"
 #include <sys/time.h>
 
+
 #define SD_CARD_CS_PIN  4
 #define LOADCELL_SCALE  2111.11f
 
+
+struct Button {
+  const uint8_t PIN;
+  uint32_t numberKeyPresses;
+  bool pressed;
+};
+
+Button button1 = {15, 0, false};
+
 struct timeval tv;
 struct timeval mytime;
+
+void IRAM_ATTR isr() {
+  button1.numberKeyPresses += 1;
+  button1.pressed = true;
+}
 
 class Hx711
 {
@@ -250,6 +267,9 @@ boolean initSDCard() {
 void setup() {
   rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
   Serial.begin(115200);
+  inMode(button1.PIN, INPUT_PULLUP);
+  attachInterrupt(button1.PIN, isr, FALLING);
+
   sdTestFlag = initSDCard();
 
   if (sdTestFlag) {
@@ -270,11 +290,16 @@ void setup() {
 
   tv.tv_sec = 1541574461;
   settimeofday(&tv, NULL);
-  
+
 }
 
 
 void loop() {
+  if (button1.pressed) {
+    ESP.restart();
+    Serial.printf("Button 1 has been pressed %u times\n", button1.numberKeyPresses);
+    button1.pressed = false;
+  }
 
   val = scale.value();
   Serial.print("offset ==> "); Serial.print(offset);
@@ -289,6 +314,6 @@ void loop() {
 
   gettimeofday(&mytime, NULL);
   Serial.println(mytime.tv_sec);
-  
+
 
 }
