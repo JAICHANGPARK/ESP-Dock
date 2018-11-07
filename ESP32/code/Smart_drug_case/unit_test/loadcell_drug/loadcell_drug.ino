@@ -1,5 +1,6 @@
 #include "soc/rtc.h"
 
+#define LOADCELL_SCALE  1914.76f
 class Hx711
 {
   public:
@@ -133,7 +134,7 @@ float Hx711::gram()
 
 Hx711 scale(13, 12);
 
-long val, val2 = 0;
+long val = 0;
 volatile float count = 0;
 volatile long offset = 0;
 volatile long offset_b = 0;
@@ -141,7 +142,7 @@ volatile long offset_b = 0;
 double average(int count) {
   double value = 0;
   for (int i = 0; i < count ; i++) {
-    value += (scale.value() - offset) / 860.91f;
+    value += (scale.value() - offset) / LOADCELL_SCALE;
   }
   return value / (double)count;
 }
@@ -164,10 +165,10 @@ void setup() {
   for (int i = 0; i < 20; i++) {
     count += 1;
     Serial.print(" init offset_b :  "); Serial.println(scale.value());
-    offset_b += scale.value();
+    offset += scale.value();
 
   }
-  offset_b  = offset_b / count;
+  offset  = offset / count;
   count = 0;
 
   scale.power_down();              // put the ADC in sleep mode
@@ -180,11 +181,11 @@ void setup() {
 void loop() {
 
 
-  val2 = scale.value();
-  Serial.print("offset ==> "); Serial.print(offset_b);
-  Serial.print(" | raw value 2: "); Serial.print(val2);
-  Serial.print(" | raw-offset: "); Serial.print((val2 - offset_b));
-  Serial.print(" | cal : ");  Serial.print((val2 - offset_b) / 860.91f,1);
+  val = scale.value();
+  Serial.print("offset ==> "); Serial.print(offset);
+  Serial.print(" | raw value 2: "); Serial.print(val);
+  Serial.print(" | raw-offset: "); Serial.print((val - offset));
+  Serial.print(" | cal : ");  Serial.print((val - offset) / LOADCELL_SCALE, 1);
   Serial.print(" | averages :  "); Serial.println(average(20), 1);
 
   scale.power_down();              // put the ADC in sleep mode
