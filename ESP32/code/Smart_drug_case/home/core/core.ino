@@ -1,13 +1,11 @@
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
-
 #include "soc/rtc.h"
-
 #include <sys/time.h>
 
-
-#define LOADCELL_SCALE  1801.58f
+#define SD_CARD_CS_PIN  4
+#define LOADCELL_SCALE  2111.11f
 
 struct timeval tv;
 struct timeval mytime;
@@ -222,7 +220,7 @@ void createFile(fs::FS &fs, const char * path) {
 }
 
 boolean initSDCard() {
-  if (!SD.begin(2)) {
+  if (!SD.begin(SD_CARD_CS_PIN)) {
     Serial.println("Card Mount Failed");
     return false;
   } else {
