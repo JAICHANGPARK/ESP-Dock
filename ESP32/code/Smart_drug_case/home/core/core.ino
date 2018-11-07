@@ -8,7 +8,7 @@
 
 
 #define SD_CARD_CS_PIN  4
-#define LOADCELL_SCALE  2111.11f
+#define LOADCELL_SCALE 1967.96f
 
 
 struct Button {
