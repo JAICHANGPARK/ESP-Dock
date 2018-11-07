@@ -267,7 +267,7 @@ boolean initSDCard() {
 void setup() {
   rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
   Serial.begin(115200);
-  inMode(button1.PIN, INPUT_PULLUP);
+  pinMode(button1.PIN, INPUT_PULLUP);
   attachInterrupt(button1.PIN, isr, FALLING);
 
   sdTestFlag = initSDCard();
