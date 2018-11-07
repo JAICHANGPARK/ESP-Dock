@@ -8,7 +8,7 @@
 
 
 #define SD_CARD_CS_PIN  4
-#define LOADCELL_SCALE 1967.96f
+#define LOADCELL_SCALE 1916.63f
 
 
 struct Button {
@@ -276,7 +276,7 @@ void setup() {
     createFile(SD, "/drug_log.csv");
   }
 
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 30; i++) {
     count += 1;
     Serial.print(" init offset_b :  "); Serial.println(scale.value());
     offset += scale.value();
