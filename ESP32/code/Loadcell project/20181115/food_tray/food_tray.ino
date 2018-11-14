@@ -287,9 +287,9 @@ Hx711 scalePartTwo(13, 12);  //part 2
 // Initialize the OLED display using Wire library
 SH1106Wire  display(0x3c, 21, 22);
 
-Button button1 = {34, 0, false};
-Button button2 = {32, 0, false};
-Button button3 = {33, 0, false};
+Button button1 = {32, 0, false};
+Button button2 = {33, 0, false};
+Button button3 = {34, 0, false};
 
 long val, val2 = 0;
 volatile float count = 0;
@@ -756,7 +756,6 @@ void loop() {
             rice, soup, sideA, sideB, sideC, sideD, startIntakeTime, mytime.tv_sec);
 
     appendFile(SD, "/log.csv", x);
-
     readFileForBle(SD, "/log.csv");
     button2.pressed = false;
   }
