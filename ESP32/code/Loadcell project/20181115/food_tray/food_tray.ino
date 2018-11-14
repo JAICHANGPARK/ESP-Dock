@@ -287,9 +287,9 @@ Hx711 scalePartTwo(13, 12);  //part 2
 // Initialize the OLED display using Wire library
 SH1106Wire  display(0x3c, 21, 22);
 
-Button button1 = {32, 0, false};
+Button button1 = {34, 0, false};
 Button button2 = {33, 0, false};
-Button button3 = {34, 0, false};
+Button button3 = {32, 0, false};
 
 long val, val2 = 0;
 volatile float count = 0;
