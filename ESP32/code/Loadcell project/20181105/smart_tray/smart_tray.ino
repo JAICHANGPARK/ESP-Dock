@@ -14,12 +14,12 @@
 
 #define DEBUG
 
-#define PART_ZERO_CHANNAL_A_SCALE   433.8f
-#define PART_ZERO_CHANNAL_B_SCALE   110.56f
-#define PART_ONE_CHANNAL_A_SCALE    428.97f
-#define PART_ONE_CHANNAL_B_SCALE    104.03f
+#define PART_ZERO_CHANNAL_A_SCALE   413.07f
+#define PART_ZERO_CHANNAL_B_SCALE   102.90f
+#define PART_ONE_CHANNAL_A_SCALE    423.45f
+#define PART_ONE_CHANNAL_B_SCALE    99.12f
 #define PART_TWO_CHANNAL_A_SCALE    431.06f
-#define PART_TWO_CHANNAL_B_SCALE    106.68f
+#define PART_TWO_CHANNAL_B_SCALE    109.52f
 
 //#define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
 //#define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -311,6 +311,7 @@ String stringRice, stringSoup, stringSideA, stringSideB, stringSideC, stringSide
 volatile unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 unsigned long debounceDelay = 150;    // the debounce time; increase if the output flickers
 long startIntakeTime = 0;  // 섭취 시작 시간
+long realTimeTimes  = 0;
 volatile float rice = 0.0f;
 volatile float soup = 0.0f;
 volatile float sideA = 0.0f;
@@ -728,6 +729,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  long currentSystemTime = millis();
 
   if (button1.pressed) { //제로 세트
     Serial.printf("Button 1 has been pressed %u times\n", button1.numberKeyPresses);
@@ -749,12 +751,12 @@ void loop() {
     sideD = startValueSideA - sideD;
 
     char x[46] = {};
-    
+
     sprintf(x, "%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%ld,%ld\n",
             rice, soup, sideA, sideB, sideC, sideD, startIntakeTime, mytime.tv_sec);
 
     appendFile(SD, "/log.csv", x);
-    
+
     readFileForBle(SD, "/log.csv");
     button2.pressed = false;
   }
@@ -864,15 +866,37 @@ void loop() {
         pRealTimeCharacteristic->notify();
 
       } else if (!realtimeFirstPhase && !realtimeSecondPhase && !realTimeCheckAuth && realTimeFinalPhase) { // 실시간 데이터 보내기
+        
+        if (currentSystemTime - realTimeTimes >= 1000) {
+          int cnt = 0;
+          uint8_t real_time[2];
+          readAllValue(1);
+          uint16_t tmp_uint = (uint16_t)(rice * 100);
+          real_time[cnt++] = (uint8_t)(tmp_uint >> 8 & 0xff);
+          real_time[cnt++] = (uint8_t)(tmp_uint & 0xff);
+          tmp_uint = (uint16_t)(soup * 100);
+          real_time[cnt++] = (uint8_t)(tmp_uint >> 8 & 0xff);
+          real_time[cnt++] = (uint8_t)(tmp_uint & 0xff);
+          tmp_uint = (uint16_t)(sideA * 100);
+          real_time[cnt++] = (uint8_t)(tmp_uint >> 8 & 0xff);
+          real_time[cnt++] = (uint8_t)(tmp_uint & 0xff);
+          tmp_uint = (uint16_t)(sideB * 100);
+          real_time[cnt++] = (uint8_t)(tmp_uint >> 8 & 0xff);
+          real_time[cnt++] = (uint8_t)(tmp_uint & 0xff);
+          tmp_uint = (uint16_t)(sideC * 100);
+          real_time[cnt++] = (uint8_t)(tmp_uint >> 8 & 0xff);
+          real_time[cnt++] = (uint8_t)(tmp_uint & 0xff);
+          tmp_uint = (uint16_t)(sideD * 100);
+          real_time[cnt++] = (uint8_t)(tmp_uint >> 8 & 0xff);
+          real_time[cnt++] = (uint8_t)(tmp_uint & 0xff);
+          cnt++;
+          pRealTimeCharacteristic->setValue(real_time, cnt);
+          pRealTimeCharacteristic->notify();
+          cnt = 0;
+          realTimeTimes = millis();
+        }
 
-        uint8_t real_time[2];
-        double tmp = average(20);
-        uint16_t tmp_uint = (uint16_t)(tmp * 100);
-        real_time[0] = (uint8_t)(tmp_uint >> 8 & 0xff);
-        real_time[1] = (uint8_t)(tmp_uint & 0xff);
-        pRealTimeCharacteristic->setValue(real_time, 2);
-        pRealTimeCharacteristic->notify();
-        delay(1000);
+        //        delay(1000);
 
       }
     }
