@@ -77,6 +77,8 @@ void loop() {
 
   // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
+
+  
 }
 
 
