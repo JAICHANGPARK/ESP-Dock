@@ -94,9 +94,9 @@ void setup() {
   
   pTxCharacteristic = pService -> createCharacteristic(CHARACTERISTIC_HEART_RATE,
                       BLECharacteristic::PROPERTY_NOTIFY |
-                      BLECharacteristic::PROPERTY_READ);
-                      
+                      BLECharacteristic::PROPERTY_READ);   
   pTxCharacteristic->addDescriptor(new BLE2902());
+  
   pService->start();// Start the service
   pServer->getAdvertising()->start();// Start advertising
   Serial.println("Waiting a client connection to notify...");
