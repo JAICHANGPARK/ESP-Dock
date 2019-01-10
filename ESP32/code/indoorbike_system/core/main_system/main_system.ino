@@ -29,8 +29,10 @@
 #define CHARACTERISTIC_SYNC                 "0000fff2-0000-1000-8000-00805f9b34fb"
 
 BLEServer *pServer = NULL;
-BLECharacteristic * pTxCharacteristic;
-BLECharacteristic * pRealTimeCharacteristic;
+BLECharacteristic *pTxCharacteristic; //HeartRate
+
+BLECharacteristic *pIndoorBikeCharacteristic;
+BLECharacteristic *pTreadmillCharacteristic;
 
 struct timeval tv;
 struct timeval mytime;
@@ -91,12 +93,18 @@ void setup() {
   pServer = BLEDevice::createServer();  // Create the BLE Server
   pServer -> setCallbacks(new MyServerCallbacks());
   BLEService *pService = pServer -> createService(HEART_RATE_SERVICE_UUID);
-  
+
   pTxCharacteristic = pService -> createCharacteristic(CHARACTERISTIC_HEART_RATE,
                       BLECharacteristic::PROPERTY_NOTIFY |
-                      BLECharacteristic::PROPERTY_READ);   
+                      BLECharacteristic::PROPERTY_READ);
   pTxCharacteristic->addDescriptor(new BLE2902());
-  
+
+  BLEService *pFitnessMachineService = pServer -> createService(FITNESS_MACHINE_SERVICE_UUID);
+  pIndoorBikeCharacteristic  = pFitnessMachineService -> createCharacteristic(CHARACTERISTIC_INDOOR_BIKE,
+                               BLECharacteristic::PROPERTY_NOTIFY);
+  pIndoorBikeCharacteristic->addDescriptor(new BLE2902());
+                   
+
   pService->start();// Start the service
   pServer->getAdvertising()->start();// Start advertising
   Serial.println("Waiting a client connection to notify...");
