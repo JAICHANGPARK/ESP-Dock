@@ -103,8 +103,10 @@ void setup() {
   pIndoorBikeCharacteristic  = pFitnessMachineService -> createCharacteristic(CHARACTERISTIC_INDOOR_BIKE,
                                BLECharacteristic::PROPERTY_NOTIFY);
   pIndoorBikeCharacteristic->addDescriptor(new BLE2902());
-                   
-
+  pTreadmillCharacteristic  = pFitnessMachineService -> createCharacteristic(CHARACTERISTIC_TREADMILL,
+                              BLECharacteristic::PROPERTY_NOTIFY);
+  pTreadmillCharacteristic->addDescriptor(new BLE2902());
+  
   pService->start();// Start the service
   pServer->getAdvertising()->start();// Start advertising
   Serial.println("Waiting a client connection to notify...");
