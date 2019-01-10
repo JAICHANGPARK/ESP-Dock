@@ -37,9 +37,24 @@ BLECharacteristic *pTreadmillCharacteristic;
 struct timeval tv;
 struct timeval mytime;
 
-
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
+
+
+struct Button {
+  const uint8_t PIN;
+  uint32_t numberKeyPresses;
+  bool pressed;
+};
+
+Button button1 = {14, 0, false};
+Button button2 = {15, 0, false};
+
+void IRAM_ATTR isr() {
+  button2.numberKeyPresses += 1;
+  button2.pressed = true;
+}
+
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -87,13 +102,19 @@ void setup() {
   Serial.begin(115200);
   tv.tv_sec = 1540885090;
   settimeofday(&tv, NULL);
+
+  pinMode(button1.PIN, INPUT_PULLUP);
+  //    attachInterruptArg(button1.PIN, isr, &button1, FALLING);
+  pinMode(button2.PIN, INPUT_PULLUP);
+  attachInterrupt(button2.PIN, isr, FALLING);
+
   //--------------------------------------------------------------
 
   BLEDevice::init("ESP32_KNU_IBK");  // Create the BLE Device
   pServer = BLEDevice::createServer();  // Create the BLE Server
   pServer -> setCallbacks(new MyServerCallbacks());
-  BLEService *pService = pServer -> createService(HEART_RATE_SERVICE_UUID);
 
+  BLEService *pService = pServer -> createService(HEART_RATE_SERVICE_UUID);
   pTxCharacteristic = pService -> createCharacteristic(CHARACTERISTIC_HEART_RATE,
                       BLECharacteristic::PROPERTY_NOTIFY |
                       BLECharacteristic::PROPERTY_READ);
@@ -106,13 +127,35 @@ void setup() {
   pTreadmillCharacteristic  = pFitnessMachineService -> createCharacteristic(CHARACTERISTIC_TREADMILL,
                               BLECharacteristic::PROPERTY_NOTIFY);
   pTreadmillCharacteristic->addDescriptor(new BLE2902());
-  
+
   pService->start();// Start the service
+  pFitnessMachineService -> start();
   pServer->getAdvertising()->start();// Start advertising
   Serial.println("Waiting a client connection to notify...");
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  if (button1.pressed) {
+    Serial.printf("Button 1 has been pressed %u times\n", button1.numberKeyPresses);
+    button1.pressed = false;
+  }
+  if (button2.pressed) {
+    Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
+    button2.pressed = false;
+  }
+  // disconnecting
+  if (!deviceConnected && oldDeviceConnected) {
+    delay(500); // give the bluetooth stack the chance to get things ready
+    pServer->startAdvertising(); // restart advertising
+    Serial.println("start advertising");
+    oldDeviceConnected = deviceConnected;
+  }
+  // connecting
+  if (deviceConnected && !oldDeviceConnected) {
+    // do stuff here on connecting
+    oldDeviceConnected = deviceConnected;
+  }
 
 }
