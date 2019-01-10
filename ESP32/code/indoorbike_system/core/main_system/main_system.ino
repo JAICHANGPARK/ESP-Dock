@@ -2,6 +2,8 @@
 #include "SD.h"
 #include "SPI.h"
 
+#include <sys/time.h>
+
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -30,6 +32,10 @@ BLEServer *pServer = NULL;
 BLECharacteristic * pTxCharacteristic;
 BLECharacteristic * pRealTimeCharacteristic;
 
+struct timeval tv;
+struct timeval mytime;
+
+
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
@@ -43,14 +49,14 @@ class MyServerCallbacks: public BLEServerCallbacks {
       deviceConnected = false;
       digitalWrite(5, true);
       //모든 플레그 변수 초기화
-      firstPhase  = false;
-      secondPhase = false;
-      checkAuth = false;
-
-      realtimeFirstPhase = false;
-      realtimeSecondPhase = false;
-      realTimeCheckAuth = false;
-      realTimeFinalPhase = false;
+      //      firstPhase  = false;
+      //      secondPhase = false;
+      //      checkAuth = false;
+      //
+      //      realtimeFirstPhase = false;
+      //      realtimeSecondPhase = false;
+      //      realTimeCheckAuth = false;
+      //      realTimeFinalPhase = false;
     }
 };
 
@@ -76,15 +82,24 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
 void setup() {
   // put your setup code here, to run once:
-Serial.begin(115200);
-tv.tv_sec = 1540885090;
+  Serial.begin(115200);
+  tv.tv_sec = 1540885090;
   settimeofday(&tv, NULL);
   //--------------------------------------------------------------
 
   BLEDevice::init("ESP32_KNU_IBK");  // Create the BLE Device
   pServer = BLEDevice::createServer();  // Create the BLE Server
- pServer -> setCallbacks(new MyServerCallbacks());
- 
+  pServer -> setCallbacks(new MyServerCallbacks());
+  BLEService *pService = pServer -> createService(HEART_RATE_SERVICE_UUID);
+  
+  pTxCharacteristic = pService -> createCharacteristic(CHARACTERISTIC_HEART_RATE,
+                      BLECharacteristic::PROPERTY_NOTIFY |
+                      BLECharacteristic::PROPERTY_READ);
+                      
+  pTxCharacteristic->addDescriptor(new BLE2902());
+  pService->start();// Start the service
+  pServer->getAdvertising()->start();// Start advertising
+  Serial.println("Waiting a client connection to notify...");
 }
 
 void loop() {
