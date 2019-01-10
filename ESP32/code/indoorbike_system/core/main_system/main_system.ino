@@ -26,11 +26,65 @@
 #define CHARACTERISTIC_CONTROL              "0000fff1-0000-1000-8000-00805f9b34fb"
 #define CHARACTERISTIC_SYNC                 "0000fff2-0000-1000-8000-00805f9b34fb"
 
+BLEServer *pServer = NULL;
+BLECharacteristic * pTxCharacteristic;
+BLECharacteristic * pRealTimeCharacteristic;
+
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
+
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+      digitalWrite(5, false);
+    };
+
+    void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+      digitalWrite(5, true);
+      //모든 플레그 변수 초기화
+      firstPhase  = false;
+      secondPhase = false;
+      checkAuth = false;
+
+      realtimeFirstPhase = false;
+      realtimeSecondPhase = false;
+      realTimeCheckAuth = false;
+      realTimeFinalPhase = false;
+    }
+};
+
+class MyCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string rxValue = pCharacteristic->getValue();
+      uint8_t tmp[rxValue.length()];
+      Serial.print("콜백으로 들어온 데이터 길이 : ");  Serial.println(rxValue.length());
+      if (rxValue.length() > 0) {
+        Serial.println("*********");
+        Serial.print("Received Value: ");
+        for (int i = 0; i < rxValue.length(); i++) {
+          Serial.print(rxValue[i]);
+          tmp[i] = rxValue[i];
+        }
+        Serial.println();
+        Serial.println("*********");
+      }
+    }
+};
+
 //#define CHARACTERISTIC_UUID_REALTIME        "0000ffe3-0000-1000-8000-00805f9b34fb"
 
 void setup() {
   // put your setup code here, to run once:
+Serial.begin(115200);
+tv.tv_sec = 1540885090;
+  settimeofday(&tv, NULL);
+  //--------------------------------------------------------------
 
+  BLEDevice::init("ESP32_KNU_IBK");  // Create the BLE Device
+  pServer = BLEDevice::createServer();  // Create the BLE Server
+ pServer -> setCallbacks(new MyServerCallbacks());
+ 
 }
 
 void loop() {

@@ -1,0 +1,6 @@
+{
+    "board": "espressif:esp32:d32_pro",
+    "configuration": "PSRAM=disabled,PartitionScheme=default,FlashFreq=80,UploadSpeed=921600,DebugLevel=none",
+    "port": "COM30",
+    "sketch": "main_system.ino"
+}
