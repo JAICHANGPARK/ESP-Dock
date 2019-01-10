@@ -23,7 +23,7 @@ void loop()
 {
   // This sketch displays information every time a new sentence is correctly encoded.
   while (myGps.available() > 0)
-    if (gps.encode(ss.read()))
+    if (gps.encode(myGps.read()))
       displayInfo();
 
   if (millis() > 5000 && gps.charsProcessed() < 10)
