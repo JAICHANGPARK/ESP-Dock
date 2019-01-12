@@ -4,10 +4,11 @@
 #include <Wire.h>
 #include "GravityRtc.h"
 #include <WEMOS_SHT3X.h>
-#include <Ticker.h>
+//#include <Ticker.h>
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  30        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  60        /* Time ESP32 will go to sleep (in seconds) */
+#define DEBUG
 
 RTC_DATA_ATTR int bootCount = 0;
 
@@ -27,35 +28,45 @@ void print_wakeup_reason() {
   }
 }
 
-Ticker toggler;
+//Ticker toggler;
+//const float togglePeriod = 10; //seconds
+//bool trag_flag = false;
 
 SHT3X sht30(0x45);
-GravityRtc rtc;     //RTC Initialization
-const float togglePeriod = 10; //seconds
-String filePath = "/sht30_mornitoring/logger.csv";
-bool trag_flag = false;
 
 volatile uint32_t fileIndex = 0;
+String filePath = "/sht30_mornitoring/logger.csv";
+GravityRtc rtc;     //RTC Initialization
 
 
-void toggle() {
-  trag_flag = true;
-  fileIndex++;
-}
+//void toggle() {
+//  trag_flag = true;
+//  fileIndex++;
+//}
 
 void createDir(fs::FS &fs, const char * path) {
+#ifdef DEBUG
   Serial.printf("Creating Dir: %s\n", path);
+#endif
   if (fs.mkdir(path)) {
+#ifdef DEBUG
     Serial.println("Dir created");
+#endif
   } else {
+#ifdef DEBUG
     Serial.println("mkdir failed");
+#endif
   }
 }
 void createFile(fs::FS &fs, const char * path) {
+#ifdef DEBUG
   Serial.printf("Writing file: %s\n", path);
+#endif
   File file = fs.open(path, FILE_WRITE);
   if (!file) {
+#ifdef DEBUG
     Serial.println("Failed to open file for writing");
+#endif
     return;
   }
   file.close();
@@ -66,13 +77,19 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
 
   File file = fs.open(path, FILE_APPEND);
   if (!file) {
+#ifdef DEBUG
     Serial.println("Failed to open file for writing");
+#endif
     return;
   }
   if (file.println(message)) {
+#ifdef DEBUG
     Serial.println("File written");
+#endif
   } else {
+#ifdef DEBUG
     Serial.println("Write failed");
+#endif
   }
   file.close();
 }
@@ -82,26 +99,30 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(12, OUTPUT);
-  toggler.attach(togglePeriod, toggle);
+  //  toggler.attach(togglePeriod, toggle);
+#ifdef DEBUG
   Serial.begin(115200);
-
   ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
-
-  //Print the wakeup reason for ESP32
-  print_wakeup_reason();
+  print_wakeup_reason(); //Print the wakeup reason for ESP32
+#endif
 
   if (!SD.begin(4)) {
+#ifdef DEBUG
     Serial.println("Card Mount Failed");
+#endif
     return;
   }
   uint8_t cardType = SD.cardType();
 
   if (cardType == CARD_NONE) {
+#ifdef DEBUG
     Serial.println("No SD card attached");
+#endif
     return;
   }
 
+#ifdef DEBUG
   Serial.print("SD Card Type: ");
   if (cardType == CARD_MMC) {
     Serial.println("MMC");
@@ -114,6 +135,7 @@ void setup() {
   }
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
+#endif
   createDir(SD, "/sht30_mornitoring");
   createFile(SD, "/sht30_mornitoring/logger.csv");
 
@@ -127,12 +149,14 @@ void loop() {
   String dateMonth = rtc.month < 10 ? ("0" + String(rtc.month)) : String(rtc.month);
   String dateTimeString = String(rtc.year) + "-" + dateMonth + "-" + String(rtc.day) + " "
                           + String(rtc.hour) + ":" + String(rtc.minute)  + ":" + String(rtc.second);
-
+#ifdef DEBUG
   Serial.println(dateTimeString);
-
+#endif
   if (sht30.get() == 0) {
     String saveData = String(sht30.cTemp) + "," + String(sht30.humidity);
+#ifdef DEBUG
     Serial.println(saveData);
+#endif
     String logging = String(fileIndex) + "," + saveData + "," + dateTimeString;
     //      Serial.print("Temperature in Celsius : ");
     //      Serial.println(sht30.cTemp);
@@ -147,7 +171,9 @@ void loop() {
 
     writeFile(SD, logging_path, logging_c);
   } else {
+#ifdef DEBUG
     Serial.println("SHT30 Error!");
+#endif
   }
 
   digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
@@ -158,12 +184,13 @@ void loop() {
   delay(1000);                       // wait for a second
 
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
 
+#ifdef DEBUG
+  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
   Serial.println("Going to sleep now");
   Serial.flush();
+#endif
   esp_deep_sleep_start();
-  Serial.println("This will never be printed");
 
 
 
