@@ -158,7 +158,12 @@ void loop() {
   delay(1000);                       // wait for a second
 
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +" Seconds");
+  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
+
+  Serial.println("Going to sleep now");
+  Serial.flush();
+  esp_deep_sleep_start();
+  Serial.println("This will never be printed");
 
 
 
