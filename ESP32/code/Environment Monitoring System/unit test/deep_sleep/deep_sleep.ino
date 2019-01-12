@@ -102,10 +102,10 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(12, OUTPUT);
+   ++bootCount;
   //  toggler.attach(togglePeriod, toggle);
 #ifdef DEBUG
   Serial.begin(115200);
-  ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
   print_wakeup_reason(); //Print the wakeup reason for ESP32
 #endif
@@ -156,6 +156,10 @@ void setup() {
   }
   rtc.setup();
 
+  epd_init();
+  epd_wakeup();
+  epd_set_memory();
+
 }
 
 void loop() {
@@ -178,7 +182,7 @@ void loop() {
 #ifdef DEBUG
     Serial.println(saveData);
 #endif
-    String logging = String(fileIndex) + "," + saveData + "," + dateTimeString;
+    String logging = String(bootCount) + "," + saveData + "," + dateTimeString;
     //      Serial.print("Temperature in Celsius : ");
     //      Serial.println(sht30.cTemp);
     //      Serial.print("Temperature in Fahrenheit : ");
@@ -191,6 +195,12 @@ void loop() {
     const char * logging_c = logging.c_str();
 
     writeFile(SD, logging_path, logging_c);
+
+    draw_text(dateTimeString, String(sht30.cTemp),
+              String(sht30.humidity),
+              String(event.pressure),
+              String(bmp.pressureToAltitude(seaLevelPressure, event.pressure)),
+              String(bootCount));
 
     digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
     digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)

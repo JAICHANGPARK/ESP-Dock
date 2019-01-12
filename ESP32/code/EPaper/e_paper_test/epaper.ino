@@ -742,55 +742,28 @@ void draw_text(void)
   char buff[] = {'G', 'B', 'K', '3', '2', ':', ' ', 0xc4, 0xe3, 0xba, 0xc3, 0xca, 0xc0, 0xbd, 0xe7, 0};
   epd_set_color(BLACK, WHITE);
   epd_clear();
-  epd_set_ch_font(GBK32);
-  epd_set_en_font(ASCII32);
-  epd_disp_string(buff, 0, 50);
-  epd_disp_string("ASCII32: Hello, World!", 0, 300);
-
-  epd_set_ch_font(GBK48);
-  epd_set_en_font(ASCII48);
-  buff[3] = '4';
-  buff[4] = '8';
-  epd_disp_string(buff, 0, 100);
-  epd_disp_string("ASCII48: Hello, World!", 0, 350);
 
   epd_set_ch_font(GBK64);
   epd_set_en_font(ASCII64);
   buff[3] = '6';
   buff[4] = '4';
-  epd_disp_string(buff, 0, 160);
-  epd_disp_string("ASCII64: Hello, World!", 0, 450);
+  epd_disp_string("DateTime : ", 10, 0);
+  epd_disp_string("Temperature : ", 10, 80);
+  epd_disp_string("Humidity : ", 10, 160);
+  epd_disp_string("Pressure : ", 10, 240);
+  epd_disp_string("Altitude : ", 10, 320);
 
   epd_udpate();
 }
+void draw_line() {
 
-void draw_text(String datetime, String temp, String humi, String pressure, String alti, String bootCount)
-{
-  String temp_s = temp + " [C]";
-  String humi_s = humi + " [%]";
-  String pressure_s = pressure + " [Pa]";
-  String alti_s = alti + " [m]";
-
-  char buff[] = {'G', 'B', 'K', '3', '2', ':', ' ', 0xc4, 0xe3, 0xba, 0xc3, 0xca, 0xc0, 0xbd, 0xe7, 0};
-  epd_set_color(BLACK, WHITE);
   epd_clear();
   for (int i = 0; i < 800; i += 100)
   {
     epd_draw_line(0, i, 799, i);
     epd_draw_line(i, 0, i, 599);
   }
-  epd_set_en_font(ASCII64);
-  buff[3] = '6';
-  buff[4] = '4';
-
-  epd_disp_string("DateTime : ", 10, 20); epd_disp_string(datetime.c_str(), 300, 20);
-  epd_disp_string("Temperature : ", 10, 100); epd_disp_string(temp_s.c_str(), 400, 100);
-  epd_disp_string("Humidity : ", 10, 180); epd_disp_string(humi_s.c_str(), 400, 180);
-  epd_disp_string("Pressure : ", 10, 260); epd_disp_string(pressure_s.c_str(), 400, 260);
-  epd_disp_string("Altitude : ", 10, 340); epd_disp_string(alti_s.c_str(), 400, 340);
-  
-  epd_set_en_font(ASCII48);
-  epd_disp_string("Made By Dreamwalker", 10, 420);
-  epd_disp_string("BootCount : ", 10, 480); epd_disp_string(bootCount.c_str(), 400, 480);
   epd_udpate();
+
 }
+
