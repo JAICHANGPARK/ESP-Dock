@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include "GravityRtc.h"
 #include <WEMOS_SHT3X.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP085_U.h>
 //#include <Ticker.h>
 
 //#define DEBUG
@@ -34,6 +36,7 @@ void print_wakeup_reason() {
 //bool trag_flag = false;
 
 SHT3X sht30(0x45);
+Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
 
 volatile uint32_t fileIndex = 0;
 String filePath = "/sht30_mornitoring/logger.csv";
@@ -140,21 +143,37 @@ void setup() {
   createDir(SD, "/sht30_mornitoring");
   createFile(SD, "/sht30_mornitoring/logger.csv");
 
+  if (!bmp.begin())
+  {
+#ifdef DEBUG
+    Serial.print("Ooops, no BMP085 detected ... Check your wiring or I2C ADDR!");  /* There was a problem detecting the BMP085 ... check your connections */
+#endif
+    while (1);
+  }
+
   rtc.setup();
+
+
 
 }
 
 void loop() {
 
   rtc.read();
+
   String dateMonth = rtc.month < 10 ? ("0" + String(rtc.month)) : String(rtc.month);
   String dateTimeString = String(rtc.year) + "-" + dateMonth + "-" + String(rtc.day) + " "
                           + String(rtc.hour) + ":" + String(rtc.minute)  + ":" + String(rtc.second);
 #ifdef DEBUG
   Serial.println(dateTimeString);
 #endif
-  if (sht30.get() == 0) {
-    String saveData = String(sht30.cTemp) + "," + String(sht30.humidity);
+
+  sensors_event_t event;
+  bmp.getEvent(&event);
+
+  if (sht30.get() == 0 && event.pressure) {
+    float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
+    String saveData = String(sht30.cTemp) + "," + String(sht30.humidity) + "," + String(event.pressure) + "," + String(bmp.pressureToAltitude(seaLevelPressure, event.pressure));
 #ifdef DEBUG
     Serial.println(saveData);
 #endif
@@ -171,28 +190,33 @@ void loop() {
     const char * logging_c = logging.c_str();
 
     writeFile(SD, logging_path, logging_c);
+
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+    digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(1000);                       // wait for a second
+    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+    digitalWrite(12, LOW);   // turn the LED on (HIGH is the voltage level)
+    delay(1000);                       // wait for a second
+
+    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
+#ifdef DEBUG
+    Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
+    Serial.println("Going to sleep now");
+    Serial.flush();
+#endif
+    esp_deep_sleep_start();
+
   } else {
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+    digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(250);                       // wait for a second
+    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+    digitalWrite(12, LOW);   // turn the LED on (HIGH is the voltage level)
+    delay(250);                       // wait for a second
 #ifdef DEBUG
     Serial.println("SHT30 Error!");
 #endif
   }
-
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(1000);                       // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  digitalWrite(12, LOW);   // turn the LED on (HIGH is the voltage level)
-  delay(1000);                       // wait for a second
-
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-
-#ifdef DEBUG
-  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
-  Serial.println("Going to sleep now");
-  Serial.flush();
-#endif
-  esp_deep_sleep_start();
-
-
 
 }
