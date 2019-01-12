@@ -35,4 +35,31 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
+  sensors_event_t event;
+  bmp.getEvent(&event);
+
+  /* Display the results (barometric pressure is measure in hPa) */
+  if (event.pressure)
+  {
+    /* Display atmospheric pressue in hPa */
+    Serial.print("Pressure:    ");
+    Serial.print(event.pressure);
+    Serial.println(" hPa");
+
+    /* Then convert the atmospheric pressure, and SLP to altitude         */
+    /* Update this next line with the current SLP for better results      */
+    float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
+    Serial.print("Altitude:    ");
+    Serial.print(bmp.pressureToAltitude(seaLevelPressure,
+                                        event.pressure));
+    Serial.println(" m");
+    Serial.println("");
+  }
+  else
+  {
+    Serial.println("Sensor error");
+  }
+  delay(1000);
+
+
 }
