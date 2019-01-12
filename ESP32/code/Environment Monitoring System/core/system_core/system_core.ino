@@ -2,8 +2,12 @@
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP085_U.h>
+#include <WEMOS_SHT3X.h>
+
+SHT3X sht30(0x45);
 
 Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+GravityRtc rtc;     //RTC Initialization
 
 void displaySensorDetails(void)
 {
@@ -20,6 +24,7 @@ void displaySensorDetails(void)
   Serial.println("");
   delay(500);
 }
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Pressure Sensor Test"); Serial.println("");
@@ -53,7 +58,7 @@ void loop() {
   Serial.print(rtc.minute);
   Serial.print("   Second = ");//second
   Serial.println(rtc.second);
-  
+
   sensors_event_t event;
   bmp.getEvent(&event);
 
@@ -69,8 +74,7 @@ void loop() {
     /* Update this next line with the current SLP for better results      */
     float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
     Serial.print("Altitude:    ");
-    Serial.print(bmp.pressureToAltitude(seaLevelPressure,
-                                        event.pressure));
+    Serial.print(bmp.pressureToAltitude(seaLevelPressure, event.pressure));
     Serial.println(" m");
     Serial.println("");
   }
