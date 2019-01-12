@@ -7,7 +7,7 @@
 #include <Ticker.h>
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  30        /* Time ESP32 will go to sleep (in seconds) */
 
 RTC_DATA_ATTR int bootCount = 0;
 
@@ -122,46 +122,44 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  if (trag_flag) {
 
-    rtc.read();
-    String dateMonth = rtc.month < 10 ? ("0" + String(rtc.month)) : String(rtc.month);
-    String dateTimeString = String(rtc.year) + "-" + dateMonth + "-" + String(rtc.day) + " "
-                            + String(rtc.hour) + ":" + String(rtc.minute)  + ":" + String(rtc.second);
+  rtc.read();
+  String dateMonth = rtc.month < 10 ? ("0" + String(rtc.month)) : String(rtc.month);
+  String dateTimeString = String(rtc.year) + "-" + dateMonth + "-" + String(rtc.day) + " "
+                          + String(rtc.hour) + ":" + String(rtc.minute)  + ":" + String(rtc.second);
 
-    Serial.println(dateTimeString);
+  Serial.println(dateTimeString);
 
-    if (sht30.get() == 0) {
-      String saveData = String(sht30.cTemp) + "," + String(sht30.humidity);
-      Serial.println(saveData);
-      String logging = String(fileIndex) + "," + saveData + "," + dateTimeString;
-      //      Serial.print("Temperature in Celsius : ");
-      //      Serial.println(sht30.cTemp);
-      //      Serial.print("Temperature in Fahrenheit : ");
-      //      Serial.println(sht30.fTemp);
-      //      Serial.print("Relative Humidity : ");
-      //      Serial.println(sht30.humidity);
-      //      Serial.println();
+  if (sht30.get() == 0) {
+    String saveData = String(sht30.cTemp) + "," + String(sht30.humidity);
+    Serial.println(saveData);
+    String logging = String(fileIndex) + "," + saveData + "," + dateTimeString;
+    //      Serial.print("Temperature in Celsius : ");
+    //      Serial.println(sht30.cTemp);
+    //      Serial.print("Temperature in Fahrenheit : ");
+    //      Serial.println(sht30.fTemp);
+    //      Serial.print("Relative Humidity : ");
+    //      Serial.println(sht30.humidity);
+    //      Serial.println();
 
-      const char * logging_path = filePath.c_str(); // c_str() 함수는 string 을 char* 형으로 변환
-      const char * logging_c = logging.c_str();
+    const char * logging_path = filePath.c_str(); // c_str() 함수는 string 을 char* 형으로 변환
+    const char * logging_c = logging.c_str();
 
-      writeFile(SD, logging_path, logging_c);
-    } else {
-      Serial.println("SHT30 Error!");
-    }
-
-    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-    digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)
-    delay(1000);                       // wait for a second
-    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-    digitalWrite(12, LOW);   // turn the LED on (HIGH is the voltage level)
-    delay(1000);                       // wait for a second
-
-    trag_flag = false;
-
+    writeFile(SD, logging_path, logging_c);
+  } else {
+    Serial.println("SHT30 Error!");
   }
+
+  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+  digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)
+  delay(1000);                       // wait for a second
+  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+  digitalWrite(12, LOW);   // turn the LED on (HIGH is the voltage level)
+  delay(1000);                       // wait for a second
+
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +" Seconds");
+
 
 
 }
