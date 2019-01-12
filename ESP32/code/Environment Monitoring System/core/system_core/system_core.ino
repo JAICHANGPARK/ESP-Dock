@@ -30,11 +30,30 @@ void setup() {
     while (1);
   }
   displaySensorDetails();  /* Display some basic information on this sensor */
+
+  rtc.setup();
+
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
+  rtc.read();
+  Serial.print("   Year = ");//year
+  Serial.print(rtc.year);
+  Serial.print("   Month = ");//month
+  Serial.print(rtc.month);
+  Serial.print("   Day = ");//day
+  Serial.print(rtc.day);
+  Serial.print("   Week = ");//week
+  Serial.print(rtc.week);
+  Serial.print("   Hour = ");//hour
+  Serial.print(rtc.hour);
+  Serial.print("   Minute = ");//minute
+  Serial.print(rtc.minute);
+  Serial.print("   Second = ");//second
+  Serial.println(rtc.second);
+  
   sensors_event_t event;
   bmp.getEvent(&event);
 
