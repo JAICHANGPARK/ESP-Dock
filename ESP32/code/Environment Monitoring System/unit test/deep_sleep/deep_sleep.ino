@@ -100,7 +100,6 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
 void setup() {
   // put your setup code here, to run once:
 
-
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(12, OUTPUT);
   //  toggler.attach(togglePeriod, toggle);
@@ -140,20 +139,22 @@ void setup() {
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
 #endif
-  createDir(SD, "/sht30_mornitoring");
-  createFile(SD, "/sht30_mornitoring/logger.csv");
+  //  createDir(SD, "/sht30_mornitoring");
+  //  createFile(SD, "/sht30_mornitoring/logger.csv");
 
   if (!bmp.begin())
   {
 #ifdef DEBUG
     Serial.print("Ooops, no BMP085 detected ... Check your wiring or I2C ADDR!");  /* There was a problem detecting the BMP085 ... check your connections */
 #endif
-    while (1);
+    while (1) {
+      digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+      delay(500);                       // wait for a second
+      digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+      delay(500);                       // wait for a second
+    }
   }
-
   rtc.setup();
-
-
 
 }
 
@@ -208,12 +209,14 @@ void loop() {
     esp_deep_sleep_start();
 
   } else {
+
     digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
     digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)
-    delay(250);                       // wait for a second
+    delay(500);                       // wait for a second
     digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
     digitalWrite(12, LOW);   // turn the LED on (HIGH is the voltage level)
-    delay(250);                       // wait for a second
+    delay(500);                       // wait for a second
+
 #ifdef DEBUG
     Serial.println("SHT30 Error!");
 #endif
