@@ -1,3 +1,6 @@
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
 #include <TinyGPS++.h>
 HardwareSerial mySerial(2);
 
