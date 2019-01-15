@@ -64,6 +64,7 @@ BLECharacteristic *pAuthCharacteristic;           // 장치 인증
 BLECharacteristic *pControlCharacteristic;        // 데이터 동기화 컨드롤 처리
 BLECharacteristic *pSyncCharacteristic;           // 데이터 동기화 실제 정보 처리
 
+
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
 
@@ -73,6 +74,15 @@ byte nuidPICC[4];                                 // RFID 태그 정보 저장 �
 
 struct timeval tv;
 struct timeval mytime;
+
+
+// 암호화
+static byte aes_key[16] = {2, 2, 2, 2, 0, 0, 0, 0, 1, 1, 1, 1, 8, 8, 8, 8};
+static byte aes_iv[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static byte aes_result[MAX_AES_PROCESS];
+byte authCoreValue[] = "9876543210000001"; //16 chars == 16 bytes
+byte encrypted[16]; // AHA! needs to be large, 2x is not enough
+
 
 bool deviceConnected = false;                     // ble 연결 시 스위치 역할을 하는 flag
 bool oldDeviceConnected = false;                  // ble 연결 종료시 flag
@@ -171,9 +181,9 @@ void IRAM_ATTR isr() {                                // 자계감지 센서 Ext
 
     t = millis(); //시간 저장
   }
-
 }
 
+//#define CHARACTERISTIC_UUID_REALTIME        "0000ffe3-0000-1000-8000-00805f9b34fb"
 
 class MyServerCallbacks: public BLEServerCallbacks {    // BLE 연결 Callback Class
     void onConnect(BLEServer* pServer) { // inner function
@@ -214,7 +224,59 @@ class MyCallbacks: public BLECharacteristicCallbacks {
     }
 };
 
-//#define CHARACTERISTIC_UUID_REALTIME        "0000ffe3-0000-1000-8000-00805f9b34fb"
+class DateTimeBleCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string rxValue = pCharacteristic->getValue();
+      uint8_t tmp[rxValue.length()];
+      Serial.print("DateTimeBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
+      if (rxValue.length() > 0) {
+        Serial.println("*********");
+        Serial.print("Received Value: ");
+        for (int i = 0; i < rxValue.length(); i++) {
+          Serial.print(rxValue[i]);
+          tmp[i] = rxValue[i];
+        }
+        Serial.println();
+        Serial.println("*********");
+      }
+    }
+};
+
+class DeviceAuthBleCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string rxValue = pCharacteristic->getValue();
+      uint8_t tmp[rxValue.length()];
+      Serial.print("DeviceAuthBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
+      if (rxValue.length() > 0) {
+        Serial.println("*********");
+        Serial.print("Received Value: ");
+        for (int i = 0; i < rxValue.length(); i++) {
+          Serial.print(rxValue[i]);
+          tmp[i] = rxValue[i];
+        }
+        Serial.println();
+        Serial.println("*********");
+      }
+    }
+};
+
+class DataSyncBleCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string rxValue = pCharacteristic->getValue();
+      uint8_t tmp[rxValue.length()];
+      Serial.print("DeviceAuthBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
+      if (rxValue.length() > 0) {
+        Serial.println("*********");
+        Serial.print("Received Value: ");
+        for (int i = 0; i < rxValue.length(); i++) {
+          Serial.print(rxValue[i]);
+          tmp[i] = rxValue[i];
+        }
+        Serial.println();
+        Serial.println("*********");
+      }
+    }
+};
 
 void sdCardInit() {
 
@@ -281,6 +343,7 @@ void setup() {
   pDateTimeSyncCharacteristic = pDateTimeService -> createCharacteristic(CHARACTERISTIC_DATE_TIME_SYNC,
                                 BLECharacteristic::PROPERTY_WRITE |
                                 BLECharacteristic::PROPERTY_READ);
+  pDateTimeSyncCharacteristic -> setCallbacks(new DateTimeBleCallbacks());           //시간 프로파일은 앱과 데이터 통신으로 시간 설정하기 때문에 콜백 설정
 
   pResultCharacteristic = pDateTimeService -> createCharacteristic(CHARACTERISTIC_RESULT_CHAR,
                           BLECharacteristic::PROPERTY_WRITE |
@@ -288,15 +351,19 @@ void setup() {
                           BLECharacteristic::PROPERTY_NOTIFY );
   pResultCharacteristic->addDescriptor(new BLE2902());
 
+
   BLEService *pUserAuthService = pServer -> createService(AUTH_SERVICE_UUID);
   pAuthCharacteristic = pUserAuthService -> createCharacteristic(CHARACTERISTIC_AUTH,
                         BLECharacteristic::PROPERTY_WRITE |
                         BLECharacteristic::PROPERTY_READ);
+  pAuthCharacteristic -> setCallbacks(new DeviceAuthBleCallbacks());                   // 인증 프로파일은 앱과 데이터 통신을 하기 때문에 콜백 설정
 
   BLEService *pDataSyncService = pServer -> createService(DATA_SYNC_SERVICE_UUID);
   pControlCharacteristic = pDataSyncService -> createCharacteristic(CHARACTERISTIC_CONTROL,
                            BLECharacteristic::PROPERTY_WRITE |
                            BLECharacteristic::PROPERTY_READ);
+  pControlCharacteristic -> setCallbacks(new DataSyncBleCallbacks());                   // 인증 프로파일은 앱과 데이터 통신을 하기 때문에 콜백 설정
+
 
   pSyncCharacteristic = pDataSyncService -> createCharacteristic(CHARACTERISTIC_SYNC,
                         BLECharacteristic::PROPERTY_WRITE |
@@ -309,7 +376,7 @@ void setup() {
   pFitnessMachineService -> start();          // FitnessMachineService 시작
   pDateTimeService -> start();                // 날짜 시간 동기화 시작
   pUserAuthService -> start();                // 장비 인증 서비스 시작
-  pDataSyncService -> start();                // 정보 동기화 서비스 시작 
+  pDataSyncService -> start();                // 정보 동기화 서비스 시작
   pServer->getAdvertising()->start();         // BLE 서버 동작 시작 (Start advertising)
   Serial.println("Waiting a client connection to notify...");
 }
