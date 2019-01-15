@@ -76,9 +76,10 @@ byte nuidPICC[4];                                 // RFID 태그 정보 저장 �
 
 struct timeval tv;
 struct timeval mytime;
-
+uint32_t receivedTime = 0;                        // BLE 시간 동기화 함수 처리 변수
 
 // 암호화
+char * auth_key = "2222000011118888";
 static byte aes_key[16] = {2, 2, 2, 2, 0, 0, 0, 0, 1, 1, 1, 1, 8, 8, 8, 8};
 static byte aes_iv[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static byte aes_result[MAX_AES_PROCESS];
@@ -253,11 +254,11 @@ class DateTimeBleCallbacks: public BLECharacteristicCallbacks {
           tv.tv_sec = receivedTime;
           settimeofday(&tv, NULL);
           bleDateTimeSycnFlag = true;
-          
+
         } else { // 올바르지 않은 정보가 들어왔을 경우
           bleDateTimeSycnFlag = false;
         }
-      } else { // 길이가 0 이 아닌 경우 
+      } else { // 길이가 0 이 아닌 경우
         bleDateTimeSycnFlag = false;
       }
     }
@@ -266,17 +267,46 @@ class DateTimeBleCallbacks: public BLECharacteristicCallbacks {
 class DeviceAuthBleCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
-      uint8_t tmp[rxValue.length()];
+      unsigned char tmp[rxValue.length()];
+      unsigned char aes_result[16];
       Serial.print("DeviceAuthBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
       if (rxValue.length() > 0) {
+
         Serial.println("*********");
         Serial.print("Received Value: ");
         for (int i = 0; i < rxValue.length(); i++) {
           Serial.print(rxValue[i]);
           tmp[i] = rxValue[i];
         }
+
         Serial.println();
         Serial.println("*********");
+
+        decrypt(tmp, auth_key, aes_result);       // 복호화 
+        
+        boolean authFlag = false;
+        for (int i = 0; i < 16; i++) {            // 검증처리 
+          if (!authCoreValue[i] == aes_result[i]) { // 일치하지 않으면 
+            authFlag = false;
+            return;
+          } else { // 모두 일치하면 
+            authFlag = true;
+          }
+        }
+        
+        if (authFlag) {
+          authData[0] = 0x02;
+          authData[1] = 0x02;
+          authData[2] = 0x03;
+//          resultChar.setValue(authData, 3);
+          bleAuthCheckFlag = true;
+        } else {
+          authData[0] = 0x02;
+          authData[1] = 0xFF;
+          authData[2] = 0x03;
+//          resultChar.setValue(authData, 3);
+          bleAuthCheckFlag = false;
+        }
       }
     }
 };
