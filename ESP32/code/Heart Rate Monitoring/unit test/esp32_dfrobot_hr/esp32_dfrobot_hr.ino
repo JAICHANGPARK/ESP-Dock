@@ -24,11 +24,13 @@ volatile uint32_t nowTim = 0, lastTim = 0;
 //}
 
 void tick() {
+  
 #ifdef DF_SON3130
   hrCount = (hrCount * 6) / 2 ;
 #elif SEED_HR_EAR
   hrCount = (hrCount * 6)  ;
 #endif
+
   Serial.print("Heartrate : ");
   Serial.println(hrCount);
   hrTickerFlag = true;
