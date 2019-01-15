@@ -300,13 +300,13 @@ void loop() {
         indoorBikeData[2] = (uint8_t)(uintSpeedNow & 0xFF);
         indoorBikeData[3] = (uint8_t)(uintSpeedNow >> 8) & 0xFF;
 
-        pIndoorBikeCharacteristic->setValue(&pIndoorBikeCharacteristic, 4);
-        pIndoorBikeCharacteristic->notify();
         treadmillData[2] = (uint8_t)(uintTotalDistance & 0xFF);
         treadmillData[3] = (uint8_t)(uintTotalDistance >> 8) & 0xFF;
         treadmillData[4] = (uint8_t)(uintTotalDistance >> 16) & 0xFF;
 
-        pTreadmillCharacteristic->setValue(&treadmillData, 5);
+        pIndoorBikeCharacteristic->setValue(indoorBikeData, 4);
+        pIndoorBikeCharacteristic->notify();
+        pTreadmillCharacteristic->setValue(treadmillData, 5);
         pTreadmillCharacteristic->notify();
 
         //        indorBikeChar.setValue(indoorBikeData, 4);
@@ -314,69 +314,73 @@ void loop() {
         //        updateBatteryLevel();
 
         Serial.println("ble ok , workout ok");
-
-
-      } else { // 블루투스 연결은 되어있고 운동중이지 않을때
-        Serial.println("ble ok , workout no");
       }
-    } else { // 앱과 블루투스 연결이 안되었다면
-      if (fitnessStartOrEndFlag) { // 블루투스 연결되지 않고 운동 중일 때
-        Serial.println("ble no , workout ok");
-        long realTimeCurrentTimeMillis = millis();  // 현재 시스템 시간을 가져온다.
 
-        if (realTimeCurrentTimeMillis - t > REAL_TIME_STOP_MILLIS) {  // 운동 중이면서 만약 3초동안 인터럽트 발생이 없다면 실시간 운동 변수 초기화
-          InstantTime = 0;
-          speedNow = 0;
-          uintSpeedNow = 0;
-        }
-
-        Serial.print("count -> "); Serial.print(count); Serial.print("| instant Time  -> "); Serial.print(InstantTime);
-        Serial.print("| workout Time  -> "); Serial.print(workoutTime);
-        Serial.print("| distance -> "); Serial.print(distance);   Serial.print("| distance m to Km-> "); Serial.print(distanceUnitKm);
-        Serial.print(" | Speed ->"); Serial.print(speedNow); Serial.print(" | Speed * 100 ->"); Serial.println(uintSpeedNow);
-
-        // 운동 종료 시
-        // 모든 변수 초기화 및 플레그 초기화
-        // SD카드 저장 작업 처리
-        if (realTimeCurrentTimeMillis  - t > WORKOUT_DONE_TIME_MILLIS) { // 운동 중 플레그가 high이고 (운동 중 이지만) 30초 동안 동작이 없으면 운동 종료 판단
-
-
-          // 운동 종료시 모든 변수 초기화
-          fitnessStartOrEndFlag = false;
-          t = 0;
-          count = 0;              // 자계감지 인터럽트 카운트
-          distance = 0;           // 이동거리
-          distanceUnitKm = 0;     // 이동거리
-          startFitnessTime = 0;   // 운동 시작 시간
-          endFitnessTime = 0;     // 운동 종료 시간
-          sumSpeed = 0;           // 속도 총합
-          workoutTime = 0;        // 운동 시간
-          uintDistanceKm = 0;     // unsigned 이동거리
-          sumDistanceKm = 0x0000; // 이동거리 총합
-          sumSpeed = 0x0000;      // 운동 속도 총합
-          sumHeartRate = 0;       // 심박수 총합
-          Serial.println("운동 종료처리");
-
-        }
-
-      } else { // 블루투스 연결되지 않고 운동중이지 않을때
-        Serial.println("ble no , workout no");
+      if (currentMillis - t > REAL_TIME_STOP_MILLIS) {  // 운동 중이면서 만약 3초동안 인터럽트 발생이 없다면 실시간 운동 변수 초기화
+        InstantTime = 0;
+        speedNow = 0;
+        uintSpeedNow = 0;
       }
-    }
 
-    // disconnecting
-    if (!deviceConnected && oldDeviceConnected) {
-      delay(500); // give the bluetooth stack the chance to get things ready
-      pServer->startAdvertising(); // restart advertising
-      Serial.println("start advertising");
-      oldDeviceConnected = deviceConnected;
+    } else { // 블루투스 연결은 되어있고 운동중이지 않을때
+      Serial.println("ble ok , workout no");
     }
-    // connecting
-    if (deviceConnected && !oldDeviceConnected) {
-      // do stuff here on connecting
-      oldDeviceConnected = deviceConnected;
-    }
+  } else { // 앱과 블루투스 연결이 안되었다면
+    if (fitnessStartOrEndFlag) { // 블루투스 연결되지 않고 운동 중일 때
+      Serial.println("ble no , workout ok");
+      long realTimeCurrentTimeMillis = millis();  // 현재 시스템 시간을 가져온다.
+
+      if (realTimeCurrentTimeMillis - t > REAL_TIME_STOP_MILLIS) {  // 운동 중이면서 만약 3초동안 인터럽트 발생이 없다면 실시간 운동 변수 초기화
+        InstantTime = 0;
+        speedNow = 0;
+        uintSpeedNow = 0;
+      }
+
+      Serial.print("count -> "); Serial.print(count); Serial.print("| instant Time  -> "); Serial.print(InstantTime);
+      Serial.print("| workout Time  -> "); Serial.print(workoutTime);
+      Serial.print("| distance -> "); Serial.print(distance);   Serial.print("| distance m to Km-> "); Serial.print(distanceUnitKm);
+      Serial.print(" | Speed ->"); Serial.print(speedNow); Serial.print(" | Speed * 100 ->"); Serial.println(uintSpeedNow);
+
+      // 운동 종료 시
+      // 모든 변수 초기화 및 플레그 초기화
+      // SD카드 저장 작업 처리
+      if (realTimeCurrentTimeMillis  - t > WORKOUT_DONE_TIME_MILLIS) { // 운동 중 플레그가 high이고 (운동 중 이지만) 30초 동안 동작이 없으면 운동 종료 판단
 
 
+        // 운동 종료시 모든 변수 초기화
+        fitnessStartOrEndFlag = false;
+        t = 0;
+        count = 0;              // 자계감지 인터럽트 카운트
+        distance = 0;           // 이동거리
+        distanceUnitKm = 0;     // 이동거리
+        startFitnessTime = 0;   // 운동 시작 시간
+        endFitnessTime = 0;     // 운동 종료 시간
+        sumSpeed = 0;           // 속도 총합
+        workoutTime = 0;        // 운동 시간
+        uintDistanceKm = 0;     // unsigned 이동거리
+        sumDistanceKm = 0x0000; // 이동거리 총합
+        sumSpeed = 0x0000;      // 운동 속도 총합
+        sumHeartRate = 0;       // 심박수 총합
+        Serial.println("운동 종료처리");
+
+      }
+
+    } else { // 블루투스 연결되지 않고 운동중이지 않을때
+      Serial.println("ble no , workout no");
+    }
+  }
+
+  // disconnecting
+  if (!deviceConnected && oldDeviceConnected) {
+    delay(500); // give the bluetooth stack the chance to get things ready
+    pServer->startAdvertising(); // restart advertising
+    Serial.println("start advertising");
+    oldDeviceConnected = deviceConnected;
+  }
+  // connecting
+  if (deviceConnected && !oldDeviceConnected) {
+    // do stuff here on connecting
+    oldDeviceConnected = deviceConnected;
   }
 }
+
