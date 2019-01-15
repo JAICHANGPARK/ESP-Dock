@@ -21,7 +21,8 @@ Button button2 = {12, 0, false};
 //}
 
 void tick(){
-  
+  hrCount = hrCount * 6;
+  hrTickerFlag = true;
 }
 void IRAM_ATTR isr() {
   hrCount++;
@@ -36,27 +37,27 @@ void setup() {
   pinMode(button2.PIN, INPUT_PULLUP);
   attachInterrupt(button2.PIN, isr, RISING);
   hrCount = 0;
-  // initialize serial communication at 9600 bits per second:
-
-  // make the pushbutton's pin an input:
+ 
   //  pinMode(pushButton, INPUT);
-
   //  pinMode(button1.PIN, INPUT_PULLUP);
   //  attachInterruptArg(button1.PIN, isr, &button1, FALLING);
-
-
+  
 }
 
-// the loop routine runs over and over again forever:
 void loop() {
   // read the input pin:
   //  int buttonState = digitalRead(pushButton);
   //  // print out the state of the button:
   //  Serial.println(buttonState);
-  delay(10);        // delay in between reads for stability
-  if (button2.pressed) {
-    Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
-    button2.pressed = false;
+//  delay(10);        // delay in between reads for stability
+//  if (button2.pressed) {
+//    Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
+//    button2.pressed = false;
+//  }
+
+  if(hrTickerFlag){
+    Serial.println(hrCount);
+    hrTickerFlag = false;
   }
 
 }
