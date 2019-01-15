@@ -29,6 +29,8 @@
 #define ERGOMETER_LEXPA
 #define USE_OLED
 
+#define MAX_AES_PROCESS 32
+
 #define ONE_ROUND_DISTANCE 2.198F
 #define LEXPA_DISTANCE 5.0F
 #define REAL_TIME_STOP_MILLIS 3000      // 실시간 3초 반응 없을 시 값 초기화
@@ -227,6 +229,8 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 class DateTimeBleCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
+      size_t len = rxValue.length();
+      Serial.println(len);
       uint8_t tmp[rxValue.length()];
       Serial.print("DateTimeBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
       if (rxValue.length() > 0) {
@@ -238,6 +242,23 @@ class DateTimeBleCallbacks: public BLECharacteristicCallbacks {
         }
         Serial.println();
         Serial.println("*********");
+
+        if (rxValue[0] == 0x02 && rxValue[1] == 0x00 && rxValue[6] == 0x03) { // 실시간 첫번째
+
+          receivedTime = ((tmp[2] << 24) & 0xff000000)
+                         | ((tmp[3] << 16) & 0x00ff0000)
+                         | ((tmp[4] << 8) & 0x0000ff00)
+                         | (tmp[5] & 0x000000ff);
+          Serial.println(receivedTime);
+          tv.tv_sec = receivedTime;
+          settimeofday(&tv, NULL);
+          bleDateTimeSycnFlag = true;
+          
+        } else { // 올바르지 않은 정보가 들어왔을 경우
+          bleDateTimeSycnFlag = false;
+        }
+      } else { // 길이가 0 이 아닌 경우 
+        bleDateTimeSycnFlag = false;
       }
     }
 };
@@ -264,7 +285,7 @@ class DataSyncBleCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
       uint8_t tmp[rxValue.length()];
-      Serial.print("DeviceAuthBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
+      Serial.print("DataSyncBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
       if (rxValue.length() > 0) {
         Serial.println("*********");
         Serial.print("Received Value: ");
@@ -428,7 +449,7 @@ void loop() {
 
 
     } else { // 블루투스 연결은 되어있고 운동중이지 않을때
-      Serial.println("ble ok , workout no");
+      //      Serial.println("ble ok , workout no");
     }
   } else { // 앱과 블루투스 연결이 안되었다면
     if (fitnessStartOrEndFlag) { // 블루투스 연결되지 않고 운동 중일 때
@@ -471,7 +492,7 @@ void loop() {
       }
 
     } else { // 블루투스 연결되지 않고 운동중이지 않을때
-      Serial.println("ble no , workout no");
+      //      Serial.println("ble no , workout no");
     }
   }
 
