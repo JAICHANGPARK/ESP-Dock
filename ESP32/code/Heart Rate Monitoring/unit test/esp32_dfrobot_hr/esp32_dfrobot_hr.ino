@@ -1,11 +1,5 @@
 #include <Ticker.h>
 
-Ticker toggler;
-
-int pushButton = 12;
-volatile uint8_t hrCount = 0;
-boolean hrTickerFlag = false;
-
 struct Button {
   const uint8_t PIN;
   uint32_t numberKeyPresses;
@@ -13,6 +7,13 @@ struct Button {
 };
 
 Button button2 = {12, 0, false};
+Ticker toggler;
+
+int pushButton = 12;
+volatile uint8_t hrCount = 0;
+boolean hrTickerFlag = false;
+const float togglePeriod = 10; //seconds
+
 
 //void IRAM_ATTR isr(void* arg) {
 //  Button* s = static_cast<Button*>(arg);
@@ -20,7 +21,7 @@ Button button2 = {12, 0, false};
 //  s->pressed = true;
 //}
 
-void tick(){
+void tick() {
   hrCount = hrCount * 6;
   hrTickerFlag = true;
 }
@@ -37,11 +38,11 @@ void setup() {
   pinMode(button2.PIN, INPUT_PULLUP);
   attachInterrupt(button2.PIN, isr, RISING);
   hrCount = 0;
- 
+  toggler.attach(togglePeriod, tick);
   //  pinMode(pushButton, INPUT);
   //  pinMode(button1.PIN, INPUT_PULLUP);
   //  attachInterruptArg(button1.PIN, isr, &button1, FALLING);
-  
+
 }
 
 void loop() {
@@ -49,13 +50,13 @@ void loop() {
   //  int buttonState = digitalRead(pushButton);
   //  // print out the state of the button:
   //  Serial.println(buttonState);
-//  delay(10);        // delay in between reads for stability
-//  if (button2.pressed) {
-//    Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
-//    button2.pressed = false;
-//  }
+  //  delay(10);        // delay in between reads for stability
+  //  if (button2.pressed) {
+  //    Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
+  //    button2.pressed = false;
+  //  }
 
-  if(hrTickerFlag){
+  if (hrTickerFlag) {
     Serial.println(hrCount);
     hrTickerFlag = false;
   }
