@@ -12,7 +12,7 @@
 #include "SD.h"
 #include "SPI.h"
 
-#include <SPI.h>
+
 #include <MFRC522.h>
 
 #include <sys/time.h>
@@ -64,13 +64,13 @@ MFRC522::MIFARE_Key key;
 
 bool readRfidFlag = false;                        // 테그 정보 요청이 들어왔을 때 처리하는 플래그
 bool deleteRfidFlag = false;                      // 테그 정보 삭제 요청이 들어왔을 때 처리하는 플래그
-byte nuidPICC[4];                                 // RFID 태그 정보 저장 플래그 
+byte nuidPICC[4];                                 // RFID 태그 정보 저장 플래그
 
 struct timeval tv;
 struct timeval mytime;
 
 bool deviceConnected = false;                     // ble 연결 시 스위치 역할을 하는 flag
-bool oldDeviceConnected = false;                  // ble 연결 종료시 flag 
+bool oldDeviceConnected = false;                  // ble 연결 종료시 flag
 
 
 volatile uint32_t count = 0;                       // 자계 감지 센서 인터럽트 카운트 변수 - 인터럽트 발생시 1씩 증가
@@ -86,7 +86,7 @@ volatile uint32_t sumSpeed = 0x0000;               // 평균 속도를 구하기
 volatile uint32_t sumHeartRate = 0;                // 평균 심박수를 구하기 위한 변수
 
 long t = 0;                                        // 센서 입력 외부 인터럽트 시간 변수 .
-volatile float InstantTime = 0.0f;                 // 순간 속도 연산을 위한 델타 t 시간 변수 
+volatile float InstantTime = 0.0f;                 // 순간 속도 연산을 위한 델타 t 시간 변수
 
 uint8_t heartRateData[] = {0b00000010, 0x00};
 uint8_t treadmillData[] = {0x05, 0x00, 0x00, 0x00, 0x00};
@@ -101,7 +101,7 @@ long realTimePreviousMillis = 0;                    // 실시간운동 정보 �
 
 volatile long startFitnessTime = 0;                 // 운동 시작 시각 저장 변수
 volatile long endFitnessTime = 0;                   // 운동 종료 시각 저장 변수
-volatile long workoutTime = 0;                      // 운동 시간 저장 변수 
+volatile long workoutTime = 0;                      // 운동 시간 저장 변수
 
 //심박수 처리
 uint8_t globalHeartRate = 0;                        // 심박수 전역 변수
@@ -176,7 +176,7 @@ class MyServerCallbacks: public BLEServerCallbacks {    // BLE 연결 Callback C
       digitalWrite(5, false);
     };
 
-    void onDisconnect(BLEServer* pServer) { 
+    void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
       digitalWrite(5, true);
       //모든 플레그 변수 초기화
@@ -211,18 +211,47 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
 //#define CHARACTERISTIC_UUID_REALTIME        "0000ffe3-0000-1000-8000-00805f9b34fb"
 
+void sdCardInit() {
+
+  if (!SD.begin(4)) { // cs를 4로 설정합니다.
+    Serial.println("Card Mount Failed");
+    return;
+  }
+  uint8_t cardType = SD.cardType();
+
+  if (cardType == CARD_NONE) {
+    Serial.println("No SD card attached");
+    return;
+  }
+
+  Serial.print("SD Card Type: ");
+  if (cardType == CARD_MMC) {
+    Serial.println("MMC");
+  } else if (cardType == CARD_SD) {
+    Serial.println("SDSC");
+  } else if (cardType == CARD_SDHC) {
+    Serial.println("SDHC");
+  } else {
+    Serial.println("UNKNOWN");
+  }
+
+  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+  Serial.printf("SD Card Size: %lluMB\n", cardSize);
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  sdCardInit();
   tv.tv_sec = 1540885090;
   settimeofday(&tv, NULL);
 
   pinMode(button1.PIN, INPUT_PULLUP);             // 심박 센서 GPIO 핀처리
   //    attachInterruptArg(button1.PIN, isr, &button1, FALLING);
-  pinMode(button2.PIN, INPUT_PULLUP);             // 자계감지센터 GPIO 처리 
-  attachInterrupt(button2.PIN, isr, FALLING);     // Extenal Interrupt Connection 
+  pinMode(button2.PIN, INPUT_PULLUP);             // 자계감지센터 GPIO 처리
+  attachInterrupt(button2.PIN, isr, FALLING);     // Extenal Interrupt Connection
 
-  //-------------------------------------------------------------- BLE Profile Setting 
+  //-------------------------------------------------------------- BLE Profile Setting
 
   BLEDevice::init("ESP32_KNU_IBK");  // Create the BLE Device
   pServer = BLEDevice::createServer();  // Create the BLE Server
@@ -262,67 +291,92 @@ void loop() {
 
   if (deviceConnected) { // 만약 블루투스 연결이 되었다면
     if (fitnessStartOrEndFlag) { // 블루투스 연결은 되어 있는 상태에서 운동 중일 때만 실시간 전송이 되도록
-      Serial.println("ble ok , workout ok");
-    } else { // 블루투스 연결은 되어있고 운동중이지 않을때
-      Serial.println("ble ok , workout no");
-    }
-  } else { // 앱과 블루투스 연결이 안되었다면
-    if (fitnessStartOrEndFlag) { // 블루투스 연결되지 않고 운동 중일 때
-      Serial.println("ble no , workout ok");
-      long realTimeCurrentTimeMillis = millis();  // 현재 시스템 시간을 가져온다.
 
-      if (realTimeCurrentTimeMillis - t > REAL_TIME_STOP_MILLIS) {  // 운동 중이면서 만약 3초동안 인터럽트 발생이 없다면 실시간 운동 변수 초기화
-        InstantTime = 0;
-        speedNow = 0;
-        uintSpeedNow = 0;
+      long currentMillis = millis();    // 현재 시스템 시간 저장
+      // if 200ms have passed, check the battery level:
+      if (currentMillis - previousMillis >= 1000) {  // 1초마다 데이터 값 업데이트
+        previousMillis = currentMillis;
+
+        indoorBikeData[2] = (uint8_t)(uintSpeedNow & 0xFF);
+        indoorBikeData[3] = (uint8_t)(uintSpeedNow >> 8) & 0xFF;
+
+        pIndoorBikeCharacteristic->setValue(&pIndoorBikeCharacteristic, 4);
+        pIndoorBikeCharacteristic->notify();
+        treadmillData[2] = (uint8_t)(uintTotalDistance & 0xFF);
+        treadmillData[3] = (uint8_t)(uintTotalDistance >> 8) & 0xFF;
+        treadmillData[4] = (uint8_t)(uintTotalDistance >> 16) & 0xFF;
+
+        pTreadmillCharacteristic->setValue(&treadmillData, 5);
+        pTreadmillCharacteristic->notify();
+
+        //        indorBikeChar.setValue(indoorBikeData, 4);
+        //        treadmillChar.setValue(treadmillData, 5);
+        //        updateBatteryLevel();
+
+        Serial.println("ble ok , workout ok");
+
+
+      } else { // 블루투스 연결은 되어있고 운동중이지 않을때
+        Serial.println("ble ok , workout no");
       }
+    } else { // 앱과 블루투스 연결이 안되었다면
+      if (fitnessStartOrEndFlag) { // 블루투스 연결되지 않고 운동 중일 때
+        Serial.println("ble no , workout ok");
+        long realTimeCurrentTimeMillis = millis();  // 현재 시스템 시간을 가져온다.
 
-      Serial.print("count -> "); Serial.print(count); Serial.print("| instant Time  -> "); Serial.print(InstantTime);
-      Serial.print("| workout Time  -> "); Serial.print(workoutTime);
-      Serial.print("| distance -> "); Serial.print(distance);   Serial.print("| distance m to Km-> "); Serial.print(distanceUnitKm);
-      Serial.print(" | Speed ->"); Serial.print(speedNow); Serial.print(" | Speed * 100 ->"); Serial.println(uintSpeedNow);
+        if (realTimeCurrentTimeMillis - t > REAL_TIME_STOP_MILLIS) {  // 운동 중이면서 만약 3초동안 인터럽트 발생이 없다면 실시간 운동 변수 초기화
+          InstantTime = 0;
+          speedNow = 0;
+          uintSpeedNow = 0;
+        }
 
-      // 운동 종료 시
-      // 모든 변수 초기화 및 플레그 초기화
-      // SD카드 저장 작업 처리
-      if (realTimeCurrentTimeMillis  - t > WORKOUT_DONE_TIME_MILLIS) { // 운동 중 플레그가 high이고 (운동 중 이지만) 30초 동안 동작이 없으면 운동 종료 판단
+        Serial.print("count -> "); Serial.print(count); Serial.print("| instant Time  -> "); Serial.print(InstantTime);
+        Serial.print("| workout Time  -> "); Serial.print(workoutTime);
+        Serial.print("| distance -> "); Serial.print(distance);   Serial.print("| distance m to Km-> "); Serial.print(distanceUnitKm);
+        Serial.print(" | Speed ->"); Serial.print(speedNow); Serial.print(" | Speed * 100 ->"); Serial.println(uintSpeedNow);
+
+        // 운동 종료 시
+        // 모든 변수 초기화 및 플레그 초기화
+        // SD카드 저장 작업 처리
+        if (realTimeCurrentTimeMillis  - t > WORKOUT_DONE_TIME_MILLIS) { // 운동 중 플레그가 high이고 (운동 중 이지만) 30초 동안 동작이 없으면 운동 종료 판단
 
 
-        // 운동 종료시 모든 변수 초기화
-        fitnessStartOrEndFlag = false;
-        t = 0;
-        count = 0;              // 자계감지 인터럽트 카운트
-        distance = 0;           // 이동거리
-        distanceUnitKm = 0;     // 이동거리
-        startFitnessTime = 0;   // 운동 시작 시간
-        endFitnessTime = 0;     // 운동 종료 시간
-        sumSpeed = 0;           // 속도 총합
-        workoutTime = 0;        // 운동 시간
-        uintDistanceKm = 0;     // unsigned 이동거리
-        sumDistanceKm = 0x0000; // 이동거리 총합
-        sumSpeed = 0x0000;      // 운동 속도 총합
-        sumHeartRate = 0;       // 심박수 총합
-        Serial.println("운동 종료처리");
+          // 운동 종료시 모든 변수 초기화
+          fitnessStartOrEndFlag = false;
+          t = 0;
+          count = 0;              // 자계감지 인터럽트 카운트
+          distance = 0;           // 이동거리
+          distanceUnitKm = 0;     // 이동거리
+          startFitnessTime = 0;   // 운동 시작 시간
+          endFitnessTime = 0;     // 운동 종료 시간
+          sumSpeed = 0;           // 속도 총합
+          workoutTime = 0;        // 운동 시간
+          uintDistanceKm = 0;     // unsigned 이동거리
+          sumDistanceKm = 0x0000; // 이동거리 총합
+          sumSpeed = 0x0000;      // 운동 속도 총합
+          sumHeartRate = 0;       // 심박수 총합
+          Serial.println("운동 종료처리");
 
+        }
+
+      } else { // 블루투스 연결되지 않고 운동중이지 않을때
+        Serial.println("ble no , workout no");
       }
-
-    } else { // 블루투스 연결되지 않고 운동중이지 않을때
-      Serial.println("ble no , workout no");
     }
-  }
 
-  // disconnecting
-  if (!deviceConnected && oldDeviceConnected) {
-    delay(500); // give the bluetooth stack the chance to get things ready
-    pServer->startAdvertising(); // restart advertising
-    Serial.println("start advertising");
-    oldDeviceConnected = deviceConnected;
-  }
-  // connecting
-  if (deviceConnected && !oldDeviceConnected) {
-    // do stuff here on connecting
-    oldDeviceConnected = deviceConnected;
-  }
+    // disconnecting
+    if (!deviceConnected && oldDeviceConnected) {
+      delay(500); // give the bluetooth stack the chance to get things ready
+      pServer->startAdvertising(); // restart advertising
+      Serial.println("start advertising");
+      oldDeviceConnected = deviceConnected;
+    }
+    // connecting
+    if (deviceConnected && !oldDeviceConnected) {
+      // do stuff here on connecting
+      oldDeviceConnected = deviceConnected;
+    }
 
 
+  }
 }
