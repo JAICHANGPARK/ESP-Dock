@@ -281,17 +281,36 @@ void setup() {
   pDateTimeSyncCharacteristic = pDateTimeService -> createCharacteristic(CHARACTERISTIC_DATE_TIME_SYNC,
                                 BLECharacteristic::PROPERTY_WRITE |
                                 BLECharacteristic::PROPERTY_READ);
+
   pResultCharacteristic = pDateTimeService -> createCharacteristic(CHARACTERISTIC_RESULT_CHAR,
                           BLECharacteristic::PROPERTY_WRITE |
                           BLECharacteristic::PROPERTY_READ |
                           BLECharacteristic::PROPERTY_NOTIFY );
   pResultCharacteristic->addDescriptor(new BLE2902());
 
+  BLEService *pUserAuthService = pServer -> createService(AUTH_SERVICE_UUID);
+  pAuthCharacteristic = pUserAuthService -> createCharacteristic(CHARACTERISTIC_AUTH,
+                        BLECharacteristic::PROPERTY_WRITE |
+                        BLECharacteristic::PROPERTY_READ);
+
+  BLEService *pDataSyncService = pServer -> createService(DATA_SYNC_SERVICE_UUID);
+  pControlCharacteristic = pDataSyncService -> createCharacteristic(CHARACTERISTIC_CONTROL,
+                           BLECharacteristic::PROPERTY_WRITE |
+                           BLECharacteristic::PROPERTY_READ);
+
+  pSyncCharacteristic = pDataSyncService -> createCharacteristic(CHARACTERISTIC_SYNC,
+                        BLECharacteristic::PROPERTY_WRITE |
+                        BLECharacteristic::PROPERTY_READ |
+                        BLECharacteristic::PROPERTY_NOTIFY );
+  pSyncCharacteristic->addDescriptor(new BLE2902());
+
 
   pService->start();                          // Start the service
   pFitnessMachineService -> start();          // FitnessMachineService 시작
-  pDateTimeService -> start();                // 날짜 시간 동기화 시작 
-  pServer->getAdvertising()->start();         // Start advertising
+  pDateTimeService -> start();                // 날짜 시간 동기화 시작
+  pUserAuthService -> start();                // 장비 인증 서비스 시작
+  pDataSyncService -> start();                // 정보 동기화 서비스 시작 
+  pServer->getAdvertising()->start();         // BLE 서버 동작 시작 (Start advertising)
   Serial.println("Waiting a client connection to notify...");
 }
 
