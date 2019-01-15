@@ -2,6 +2,7 @@
 
 #define DF_SON3130
 //#define SEED_HR_EAR
+
 struct Button {
   const uint8_t PIN;
   uint32_t numberKeyPresses;
@@ -24,7 +25,7 @@ volatile uint32_t nowTim = 0, lastTim = 0;
 //}
 
 void tick() {
-  
+
 #ifdef DF_SON3130
   hrCount = (hrCount * 6) / 2 ;
 #elif SEED_HR_EAR
@@ -39,10 +40,14 @@ void tick() {
 void IRAM_ATTR isr() {
   nowTim = millis();
   uint32_t difTime =  nowTim - lastTim;
+  Serial.print(difTime);
   lastTim = nowTim;
-  if (difTime > 300 || difTime < 2000) {
+  if (difTime > 120 && difTime < 2000) {
     Serial.println("Beat \n");
     hrCount++;
+  } else {
+    Serial.println("Error \n");
+//    hrCount = 0;
   }
 
   //  button2.numberKeyPresses += 1;
