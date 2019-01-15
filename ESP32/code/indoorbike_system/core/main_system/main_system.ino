@@ -206,6 +206,10 @@ class MyServerCallbacks: public BLEServerCallbacks {    // BLE 연결 Callback C
       //      realtimeSecondPhase = false;
       //      realTimeCheckAuth = false;
       //      realTimeFinalPhase = false;
+
+      bleDateTimeSycnFlag = false;
+      bleAuthCheckFlag = false;
+      bleDataSyncFlag = false;
     }
 };
 
@@ -282,39 +286,52 @@ class DeviceAuthBleCallbacks: public BLECharacteristicCallbacks {
         Serial.println();
         Serial.println("*********");
 
-        decrypt(tmp, auth_key, aes_result);       // 복호화 
-        
+        decrypt(tmp, auth_key, aes_result);       // 복호화
+
         boolean authFlag = false;
-        for (int i = 0; i < 16; i++) {            // 검증처리 
-          if (!authCoreValue[i] == aes_result[i]) { // 일치하지 않으면 
+        for (int i = 0; i < 16; i++) {            // 검증처리
+          if (!authCoreValue[i] == aes_result[i]) { // 일치하지 않으면
             authFlag = false;
             return;
-          } else { // 모두 일치하면 
+          } else { // 모두 일치하면
             authFlag = true;
           }
         }
-        
+
         if (authFlag) {
           authData[0] = 0x02;
           authData[1] = 0x02;
           authData[2] = 0x03;
-//          resultChar.setValue(authData, 3);
+          //          resultChar.setValue(authData, 3);
           bleAuthCheckFlag = true;
         } else {
           authData[0] = 0x02;
           authData[1] = 0xFF;
           authData[2] = 0x03;
-//          resultChar.setValue(authData, 3);
+          //          resultChar.setValue(authData, 3);
           bleAuthCheckFlag = false;
         }
       }
     }
 };
 
+
+/**
+    데이터 동기화를 위한 콜백함수 - 박제창
+    데이터 전송 요청
+    0x00 : 전부
+    0xyy : 아직 정해지지 않음 Reserved
+
+    boolean bleDateTimeSycnFlag = false // 블루투스를 통해 시간 동기화가 되었을시 처리하는 플래그
+    boolean bleAuthCheckFlag = false // 사용자 인증을 위한 플래그 실패시 false 성공시 true
+    boolean bleDataSyncFlag = false // 데이터 전송 요청 이 들어왔을겨우 올바른 데이터 형식이면 true 아니면 false
+*/
 class DataSyncBleCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
       uint8_t tmp[rxValue.length()];
+      // 동기화를 위해 시간 동기화, 인증 동기화가 모두 완벽하게 진행됬다면
+
       Serial.print("DataSyncBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
       if (rxValue.length() > 0) {
         Serial.println("*********");
@@ -326,7 +343,43 @@ class DataSyncBleCallbacks: public BLECharacteristicCallbacks {
         Serial.println();
         Serial.println("*********");
       }
+
+      if (bleDateTimeSycnFlag && bleAuthCheckFlag) {
+
+        // 사전 동기화 과정이 완료되고 길이가 3개인패킷이 들어왔다면
+        if (len >= 3) {
+          // 시작 신호와 종료신호가 올바르다면
+          if (data[0] == 0x02 && data[2] == 0x03) {     // 시작신호와 종료신호가 잘 들어왔다면 
+#ifdef DEBUG
+            Serial.println("시작신호 종료신호 잘 들어옴 ");
+#endif
+           
+            if (data[1] == 0x00) bleDataSyncFlag = true;     // 중간의 명령어가 올바르다면 0x00 : 모두 전송
+
+          } else {
+            // 시작 신호와 종료신호가 일치 하지 않다면
+            resultPacket[0] = 0x02;
+            resultPacket[1] = 0xff;
+            resultPacket[2] = 0x03;
+            resultChar.setValue(resultPacket, 3);
+          }
+        } else {
+          // 길이가 3패킷보다 작다면ㄴ
+          resultPacket[0] = 0x02;
+          resultPacket[1] = 0xff;
+          resultPacket[2] = 0x03;
+          resultChar.setValue(resultPacket, 3);
+        }
+      } else {
+        // 이전 단계의 모든 인증 실패 시
+        resultPacket[0] = 0x02;
+        resultPacket[1] = 0xff;
+        resultPacket[2] = 0x03;
+        resultChar.setValue(resultPacket, 3);
+      }
+
     }
+}
 };
 
 void sdCardInit() {
