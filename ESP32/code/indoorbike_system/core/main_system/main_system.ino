@@ -56,8 +56,13 @@
 BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic; //HeartRate
 
-BLECharacteristic *pIndoorBikeCharacteristic;
-BLECharacteristic *pTreadmillCharacteristic;
+BLECharacteristic *pIndoorBikeCharacteristic;     // 실내자전거 실시간 :  해당 특성 설정은 속도를 추출하도록 flag를 설정해 놓음
+BLECharacteristic *pTreadmillCharacteristic;      // 트레드밀 실시간 : 해당 특성 설정은 이동 거리를 추출하도록 flag를 설정해 놓음
+BLECharacteristic *pDateTimeSyncCharacteristic;   // 시간 동기화 설정 
+BLECharacteristic *pResultCharacteristic;         // BLE 신호 결과 처리 
+BLECharacteristic *pAuthCharacteristic;           // 장치 인증 
+BLECharacteristic *pControlCharacteristic;        // 데이터 동기화 컨드롤 처리 
+BLECharacteristic *pSyncCharacteristic;           // 데이터 동기화 실제 정보 처리 
 
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
@@ -271,6 +276,9 @@ void setup() {
                               BLECharacteristic::PROPERTY_NOTIFY);
   pTreadmillCharacteristic->addDescriptor(new BLE2902());
 
+
+
+
   pService->start();// Start the service
   pFitnessMachineService -> start();
   pServer->getAdvertising()->start();// Start advertising
@@ -321,6 +329,7 @@ void loop() {
         speedNow = 0;
         uintSpeedNow = 0;
       }
+
 
     } else { // 블루투스 연결은 되어있고 운동중이지 않을때
       Serial.println("ble ok , workout no");
