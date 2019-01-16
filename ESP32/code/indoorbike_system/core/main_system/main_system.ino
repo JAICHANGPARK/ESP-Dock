@@ -626,14 +626,14 @@ void loop() {
           for (byte i = 0; i < 4; i++) {         // Store NUID into nuidPICC array
             nuidPICC[i] = 0x00;
           }
+          Serial.println("테그인식 시간 초과 : 초기화합니다.");
         }
       }
     }
   } else { // 앱과 블루투스 연결이 안되었다면
+    long realTimeCurrentTimeMillis = millis();  // 현재 시스템 시간을 가져온다.
     if (fitnessStartOrEndFlag) { // 블루투스 연결되지 않고 운동 중일 때
       Serial.println("ble no , workout ok");
-      long realTimeCurrentTimeMillis = millis();  // 현재 시스템 시간을 가져온다.
-
       if (realTimeCurrentTimeMillis - t > REAL_TIME_STOP_MILLIS) {  // 운동 중이면서 만약 3초동안 인터럽트 발생이 없다면 실시간 운동 변수 초기화
         InstantTime = 0;
         speedNow = 0;
@@ -671,13 +671,14 @@ void loop() {
 
     } else { // 블루투스 연결되지 않고 운동중이지 않을때
       //      Serial.println("ble no , workout no");
-      
-      if (currentMillis - rfidContactedTime  >= 60000) { // 1분간 새로운 테그 접촉이 없다면 초기화
+
+      if (realTimeCurrentTimeMillis - rfidContactedTime  >= 60000) { // 1분간 새로운 테그 접촉이 없다면 초기화
         if (rfidReadCheckFlag) {
           rfidReadCheckFlag = false; // 초기화
           for (byte i = 0; i < 4; i++) {         // Store NUID into nuidPICC array
             nuidPICC[i] = 0x00;
           }
+          Serial.println("테그인식 시간 초과 : 초기화합니다.");
         }
       }
     }
