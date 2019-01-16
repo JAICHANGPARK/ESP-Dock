@@ -142,8 +142,8 @@ Button button1 = {14, 0, false};                      // 심박 센서
 Button button2 = {15, 0, false};                      // 자계 감지 센서
 
 void IRAM_ATTR isr() {                                // 자계감지 센서 External Interrupt Function
-  button2.numberKeyPresses += 1;
-  button2.pressed = true;
+//  button2.numberKeyPresses += 1;
+//  button2.pressed = true;
 
   if (count == 0) {
     fitnessStartOrEndFlag = true;
@@ -292,7 +292,8 @@ class DeviceAuthBleCallbacks: public BLECharacteristicCallbacks {
         for (int i = 0; i < 16; i++) {            // 검증처리
           if (!authCoreValue[i] == aes_result[i]) { // 일치하지 않으면
             authFlag = false;
-            return;
+            break;
+//            return;
           } else { // 모두 일치하면
             authFlag = true;
           }
@@ -329,6 +330,7 @@ class DeviceAuthBleCallbacks: public BLECharacteristicCallbacks {
 class DataSyncBleCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
+      size_t len = rxValue.length();
       uint8_t tmp[rxValue.length()];
       // 동기화를 위해 시간 동기화, 인증 동기화가 모두 완벽하게 진행됬다면
 
@@ -344,42 +346,34 @@ class DataSyncBleCallbacks: public BLECharacteristicCallbacks {
         Serial.println("*********");
       }
 
-      if (bleDateTimeSycnFlag && bleAuthCheckFlag) {
-
-        // 사전 동기화 과정이 완료되고 길이가 3개인패킷이 들어왔다면
-        if (len >= 3) {
-          // 시작 신호와 종료신호가 올바르다면
-          if (data[0] == 0x02 && data[2] == 0x03) {     // 시작신호와 종료신호가 잘 들어왔다면 
-#ifdef DEBUG
-            Serial.println("시작신호 종료신호 잘 들어옴 ");
-#endif
-           
-            if (data[1] == 0x00) bleDataSyncFlag = true;     // 중간의 명령어가 올바르다면 0x00 : 모두 전송
-
-          } else {
-            // 시작 신호와 종료신호가 일치 하지 않다면
+      if (bleDateTimeSycnFlag && bleAuthCheckFlag) { // 사전 동기화 과정(시간동기화, AES 인증)이 모두 완료되었다면
+        if (len >= 3) {  // 길이가 3개인패킷이 들어왔다면
+          if (rxValue[0] == 0x02 && rxValue[2] == 0x03) {       // 시작신호와 종료신호가 잘 들어왔다면
+            if (rxValue[1] == 0x00) bleDataSyncFlag = true;     // 중간의 명령어가 올바르다면 0x00 : 모두 전송
+          } else {  // 시작 신호와 종료신호가 일치 하지 않다면
             resultPacket[0] = 0x02;
             resultPacket[1] = 0xff;
             resultPacket[2] = 0x03;
-            resultChar.setValue(resultPacket, 3);
+            bleDataSyncFlag = false;
+            //            resultChar.setValue(resultPacket, 3);
           }
-        } else {
-          // 길이가 3패킷보다 작다면ㄴ
+        } else {  // 길이가 3패킷보다 작다면ㄴ
+
           resultPacket[0] = 0x02;
           resultPacket[1] = 0xff;
           resultPacket[2] = 0x03;
-          resultChar.setValue(resultPacket, 3);
+          bleDataSyncFlag = false;
+          //          resultChar.setValue(resultPacket, 3);
         }
-      } else {
-        // 이전 단계의 모든 인증 실패 시
+      } else {   // 이전 단계의 모든 인증 실패 시
+
         resultPacket[0] = 0x02;
         resultPacket[1] = 0xff;
         resultPacket[2] = 0x03;
-        resultChar.setValue(resultPacket, 3);
+        bleDataSyncFlag = false;
+        //        resultChar.setValue(resultPacket, 3);
       }
-
     }
-}
 };
 
 void sdCardInit() {
