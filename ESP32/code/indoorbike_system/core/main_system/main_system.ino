@@ -69,6 +69,7 @@ BLECharacteristic *pSyncCharacteristic;           // 데이터 동기화 실제 
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
 
+boolean rfidReadCheckFlag = false;                // RFID 를 사용자가 찍었는지 안찍었는지 확인하고자 사용하는 boolean 변수
 bool readRfidFlag = false;                        // 테그 정보 요청이 들어왔을 때 처리하는 플래그
 bool deleteRfidFlag = false;                      // 테그 정보 삭제 요청이 들어왔을 때 처리하는 플래그
 byte nuidPICC[4];                                 // RFID 태그 정보 저장 플래그
@@ -441,7 +442,9 @@ void rfidProcess() {
   if (rfid.uid.uidByte[0] != nuidPICC[0] ||
       rfid.uid.uidByte[1] != nuidPICC[1] ||
       rfid.uid.uidByte[2] != nuidPICC[2] ||
-      rfid.uid.uidByte[3] != nuidPICC[3] ) {
+      rfid.uid.uidByte[3] != nuidPICC[3] ) { // 테그 정보를 확인한다.
+
+    rfidReadCheckFlag = true; // 새로운 테그 정보가 들어왔을 때
     Serial.println(F("A new card has been detected."));
 
     // Store NUID into nuidPICC array
@@ -456,8 +459,10 @@ void rfidProcess() {
     Serial.print(F("In dec: "));
     printDec(rfid.uid.uidByte, rfid.uid.size);
     Serial.println();
+  } else { // 이전과 동일한 테그가 인식됬다면
+    rfidReadCheckFlag = false;
+    Serial.println(F("Card read previously."));
   }
-  else Serial.println(F("Card read previously."));
 
   // Halt PICC
   rfid.PICC_HaltA();
@@ -474,7 +479,7 @@ void setup() {
   settimeofday(&tv, NULL);
 
   rfidInitSetting();
-  
+
 
 
 
