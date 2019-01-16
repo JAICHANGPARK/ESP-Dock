@@ -237,6 +237,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
       uint8_t tmp[rxValue.length()];
+#ifdef DEBUG
       Serial.print("콜백으로 들어온 데이터 길이 : ");  Serial.println(rxValue.length());
       if (rxValue.length() > 0) {
         Serial.println("*********");
@@ -248,6 +249,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
         Serial.println();
         Serial.println("*********");
       }
+#endif
     }
 };
 
@@ -255,10 +257,12 @@ class DateTimeBleCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       std::string rxValue = pCharacteristic->getValue();
       size_t len = rxValue.length();
+#ifdef DEBUG
       Serial.println(len);
       uint8_t tmp[rxValue.length()];
       Serial.print("DateTimeBleCallbacks 데이터 길이 : ");  Serial.println(rxValue.length());
       if (rxValue.length() > 0) {
+
         Serial.println("*********");
         Serial.print("Received Value: ");
         for (int i = 0; i < rxValue.length(); i++) {
@@ -267,7 +271,7 @@ class DateTimeBleCallbacks: public BLECharacteristicCallbacks {
         }
         Serial.println();
         Serial.println("*********");
-
+#endif
         if (rxValue[0] == 0x02 && rxValue[1] == 0x00 && rxValue[6] == 0x03) { // 실시간 첫번째
 
           receivedTime = ((tmp[2] << 24) & 0xff000000)
@@ -399,16 +403,20 @@ class DataSyncBleCallbacks: public BLECharacteristicCallbacks {
 void sdCardInit() {
 
   if (!SD.begin(4)) { // cs를 4로 설정합니다.
+#ifdef DEBUG
     Serial.println("Card Mount Failed");
+#endif
     return;
   }
   uint8_t cardType = SD.cardType();
 
   if (cardType == CARD_NONE) {
+#ifdef DEBUG
     Serial.println("No SD card attached");
+#endif
     return;
   }
-
+#ifdef DEBUG
   Serial.print("SD Card Type: ");
   if (cardType == CARD_MMC) {
     Serial.println("MMC");
@@ -420,9 +428,10 @@ void sdCardInit() {
     Serial.println("UNKNOWN");
   }
 
+
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
-
+#endif
   createDir(SD, "/save_point");
   createFile(SD, "/save_point/sp.csv");
   createDir(SD, "/data_logger");
@@ -497,7 +506,9 @@ void rfidProcess() {
 
 void setup() {
   // put your setup code here, to run once:
+#ifdef DEBUG
   Serial.begin(115200);
+#endif
   sdCardInit();
   tv.tv_sec = 1540885090;
   settimeofday(&tv, NULL);
