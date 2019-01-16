@@ -21,12 +21,30 @@
 #include <BLEUtils.h>       // BLE
 #include <BLE2902.h>        // BLE Descrition 관리
 
-#define SS_PIN                  12           // RFID CS 핀 
-#define RST_PIN                 13          // RFID
 
 #define DEBUG
 #define ERGOMETER_LEXPA
 #define USE_OLED
+#define LOLIN_ESP32_PRO
+//#define LOLIN_ESP32
+
+#define ONE_SECOND                    1000
+#define ONE_MINUTE                    (60 *1000)
+#define CAL_MINUTE(X)                 (X * ONE_MINUTE)
+
+#ifdef LOLIN_ESP32_PRO
+#define SS_PIN                        12            // RFID CS 핀 
+#define RST_PIN                       13            // RFID
+#define HEART_RATE_PIN                14            // 심박수 GPIO 핀
+#define MAGNET_SENSOR_PIN             15            // 자계감지 센서 GPIO핀
+
+#elif LOLIN_ESP32
+#define SS_PIN                        12            // RFID CS 핀 
+#define RST_PIN                       13            // RFID
+#define HEART_RATE_PIN                14            // 심박수 GPIO 핀
+#define MAGNET_SENSOR_PIN             15            // 자계감지 센서 GPIO핀
+#endif
+
 
 #define MAX_AES_PROCESS             32
 
@@ -69,6 +87,7 @@ BLECharacteristic *pSyncCharacteristic;           // 데이터 동기화 실제 
 MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
 MFRC522::MIFARE_Key key;
 
+//boolean userRFIDCheckFlag = false;                // RFID 접촉 여부 확인 플레그
 boolean rfidReadCheckFlag = false;                // RFID 를 사용자가 찍었는지 안찍었는지 확인하고자 사용하는 boolean 변수
 bool readRfidFlag = false;                        // 테그 정보 요청이 들어왔을 때 처리하는 플래그
 bool deleteRfidFlag = false;                      // 테그 정보 삭제 요청이 들어왔을 때 처리하는 플래그
@@ -87,14 +106,14 @@ byte authCoreValue[] = "9876543210000001"; //16 chars == 16 bytes
 byte encrypted[16]; // AHA! needs to be large, 2x is not enough
 
 
-bool deviceConnected = false;                     // ble 연결 시 스위치 역할을 하는 flag
-bool oldDeviceConnected = false;                  // ble 연결 종료시 flag
+bool deviceConnected = false;                       // ble 연결 시 스위치 역할을 하는 flag
+bool oldDeviceConnected = false;                    // ble 연결 종료시 flag
 
 
 volatile uint32_t count = 0;                       // 자계 감지 센서 인터럽트 카운트 변수 - 인터럽트 발생시 1씩 증가
-volatile float distance = 0.0f;                    // 이동 거리 변수 (카운트와 1회전 이동거리와 곱해짐)
-volatile float distanceUnitKm = 0.0f;              // km 단위로 환산하기 위한 변수 , 위의 distance를 활용함.
-volatile float speedNow = 0.0f;
+volatile float    distance = 0.0f;                    // 이동 거리 변수 (카운트와 1회전 이동거리와 곱해짐)
+volatile float    distanceUnitKm = 0.0f;              // km 단위로 환산하기 위한 변수 , 위의 distance를 활용함.
+volatile float    speedNow = 0.0f;
 volatile uint16_t uintSpeedNow = 0;
 volatile uint32_t uintTotalDistance = 0;
 
@@ -120,6 +139,7 @@ long realTimePreviousMillis = 0;                    // 실시간운동 정보 �
 volatile long startFitnessTime = 0;                 // 운동 시작 시각 저장 변수
 volatile long endFitnessTime = 0;                   // 운동 종료 시각 저장 변수
 volatile long workoutTime = 0;                      // 운동 시간 저장 변수
+long rfidContactedTime = 0;                         // RFID 테그 접촉 시간 저장 변수
 
 //심박수 처리
 uint8_t globalHeartRate = 0;                        // 심박수 전역 변수
@@ -444,11 +464,13 @@ void rfidProcess() {
       rfid.uid.uidByte[2] != nuidPICC[2] ||
       rfid.uid.uidByte[3] != nuidPICC[3] ) { // 테그 정보를 확인한다.
 
-    rfidReadCheckFlag = true; // 새로운 테그 정보가 들어왔을 때
+
     Serial.println(F("A new card has been detected."));
 
-    // Store NUID into nuidPICC array
-    for (byte i = 0; i < 4; i++) {
+    rfidReadCheckFlag = true;              // 새로운 테그 정보가 들어왔을 때
+    rfidContactedTime = millis();          // 테그 접촉 시간 저장
+
+    for (byte i = 0; i < 4; i++) {         // Store NUID into nuidPICC array
       nuidPICC[i] = rfid.uid.uidByte[i];
     }
 
@@ -460,8 +482,10 @@ void rfidProcess() {
     printDec(rfid.uid.uidByte, rfid.uid.size);
     Serial.println();
   } else { // 이전과 동일한 테그가 인식됬다면
-    rfidReadCheckFlag = false;
+
     Serial.println(F("Card read previously."));
+    rfidReadCheckFlag = true; // 테그가 이전과 같아도 RFID 인터페이싱을 했다는 의미로 True로 설정하게 된다.
+    rfidContactedTime = millis(); // 테그 접촉 시간 저장
   }
 
   // Halt PICC
@@ -479,8 +503,6 @@ void setup() {
   settimeofday(&tv, NULL);
 
   rfidInitSetting();
-
-
 
 
   pinMode(button1.PIN, INPUT_PULLUP);             // 심박 센서 GPIO 핀처리
@@ -564,9 +586,8 @@ void loop() {
   //  }
 
   if (deviceConnected) { // 만약 블루투스 연결이 되었다면
+    long currentMillis = millis();    // 현재 시스템 시간 저장
     if (fitnessStartOrEndFlag) { // 블루투스 연결은 되어 있는 상태에서 운동 중일 때만 실시간 전송이 되도록
-
-      long currentMillis = millis();    // 현재 시스템 시간 저장
       // if 200ms have passed, check the battery level:
       if (currentMillis - previousMillis >= 1000) {  // 1초마다 데이터 값 업데이트
         previousMillis = currentMillis;
@@ -599,6 +620,14 @@ void loop() {
 
     } else { // 블루투스 연결은 되어있고 운동중이지 않을때
       //      Serial.println("ble ok , workout no");
+      if (currentMillis - rfidContactedTime  >= 60000) { // 1분간 새로운 테그 접촉이 없다면 초기화
+        if (rfidReadCheckFlag) {
+          rfidReadCheckFlag = false; // 초기화
+          for (byte i = 0; i < 4; i++) {         // Store NUID into nuidPICC array
+            nuidPICC[i] = 0x00;
+          }
+        }
+      }
     }
   } else { // 앱과 블루투스 연결이 안되었다면
     if (fitnessStartOrEndFlag) { // 블루투스 연결되지 않고 운동 중일 때
@@ -642,6 +671,15 @@ void loop() {
 
     } else { // 블루투스 연결되지 않고 운동중이지 않을때
       //      Serial.println("ble no , workout no");
+      
+      if (currentMillis - rfidContactedTime  >= 60000) { // 1분간 새로운 테그 접촉이 없다면 초기화
+        if (rfidReadCheckFlag) {
+          rfidReadCheckFlag = false; // 초기화
+          for (byte i = 0; i < 4; i++) {         // Store NUID into nuidPICC array
+            nuidPICC[i] = 0x00;
+          }
+        }
+      }
     }
   }
 
