@@ -1,4 +1,5 @@
-#include "mbedtls/aes.h"
+
+
 void encrypt(char * plainText, char * key, unsigned char * outputBuffer) {
 
   mbedtls_aes_context aes;

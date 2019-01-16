@@ -7,34 +7,33 @@
    codeVersion : 1.0.0
 
 */
-
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
+#include "mbedtls/aes.h"
 
 
-#include <MFRC522.h>
+#include <MFRC522.h>      // RFID 전처리기
+#include <sys/time.h>      // 시스템 시관 관리 
 
-#include <sys/time.h>
+#include <BLEDevice.h>      // BLE
+#include <BLEServer.h>      // BLE
+#include <BLEUtils.h>       // BLE
+#include <BLE2902.h>        // BLE Descrition 관리
 
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
-
-#define SS_PIN 12
-#define RST_PIN 13
+#define SS_PIN                  12           // RFID CS 핀 
+#define RST_PIN                 13          // RFID
 
 #define DEBUG
 #define ERGOMETER_LEXPA
 #define USE_OLED
 
-#define MAX_AES_PROCESS 32
+#define MAX_AES_PROCESS             32
 
-#define ONE_ROUND_DISTANCE 2.198F
-#define LEXPA_DISTANCE 5.0F
-#define REAL_TIME_STOP_MILLIS 3000      // 실시간 3초 반응 없을 시 값 초기화
-#define WORKOUT_DONE_TIME_MILLIS 30000   // 운동 자동 종료 시간 30초후 모든 정보 초기화 및 변수 저장.
+#define ONE_ROUND_DISTANCE          2.198F
+#define LEXPA_DISTANCE              5.0F
+#define REAL_TIME_STOP_MILLIS       3000      // 실시간 3초 반응 없을 시 값 초기화
+#define WORKOUT_DONE_TIME_MILLIS    30000   // 운동 자동 종료 시간 30초후 모든 정보 초기화 및 변수 저장.
 
 #define HEART_RATE_SERVICE_UUID             "0000180d-0000-1000-8000-00805f9b34fb" // Heart Rate service UUID
 #define CHARACTERISTIC_HEART_RATE           "00002a37-0000-1000-8000-00805f9b34fb"
@@ -142,8 +141,8 @@ Button button1 = {14, 0, false};                      // 심박 센서
 Button button2 = {15, 0, false};                      // 자계 감지 센서
 
 void IRAM_ATTR isr() {                                // 자계감지 센서 External Interrupt Function
-//  button2.numberKeyPresses += 1;
-//  button2.pressed = true;
+  //  button2.numberKeyPresses += 1;
+  //  button2.pressed = true;
 
   if (count == 0) {
     fitnessStartOrEndFlag = true;
@@ -293,7 +292,7 @@ class DeviceAuthBleCallbacks: public BLECharacteristicCallbacks {
           if (!authCoreValue[i] == aes_result[i]) { // 일치하지 않으면
             authFlag = false;
             break;
-//            return;
+            //            return;
           } else { // 모두 일치하면
             authFlag = true;
           }
@@ -402,6 +401,69 @@ void sdCardInit() {
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
+
+  createDir(SD, "/save_point");
+  createFile(SD, "/save_point/sp.csv");
+  createDir(SD, "/data_logger");
+  createFile(SD, "/data_logger/log.csv");
+
+}
+
+void rfidInitSetting() {
+  rfid.PCD_Init(); // Init MFRC522
+
+  for (byte i = 0; i < 6; i++) {
+    key.keyByte[i] = 0xFF;
+  }
+}
+
+void rfidProcess() {
+  // Look for new cards
+  if ( ! rfid.PICC_IsNewCardPresent())
+    return;
+
+  // Verify if the NUID has been readed
+  if ( ! rfid.PICC_ReadCardSerial())
+    return;
+
+  Serial.print(F("PICC type: "));
+  MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+  Serial.println(rfid.PICC_GetTypeName(piccType));
+
+  // Check is the PICC of Classic MIFARE type
+  if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI &&
+      piccType != MFRC522::PICC_TYPE_MIFARE_1K &&
+      piccType != MFRC522::PICC_TYPE_MIFARE_4K) {
+    Serial.println(F("Your tag is not of type MIFARE Classic."));
+    return;
+  }
+
+  if (rfid.uid.uidByte[0] != nuidPICC[0] ||
+      rfid.uid.uidByte[1] != nuidPICC[1] ||
+      rfid.uid.uidByte[2] != nuidPICC[2] ||
+      rfid.uid.uidByte[3] != nuidPICC[3] ) {
+    Serial.println(F("A new card has been detected."));
+
+    // Store NUID into nuidPICC array
+    for (byte i = 0; i < 4; i++) {
+      nuidPICC[i] = rfid.uid.uidByte[i];
+    }
+
+    Serial.println(F("The NUID tag is:"));
+    Serial.print(F("In hex: "));
+    printHex(rfid.uid.uidByte, rfid.uid.size);
+    Serial.println();
+    Serial.print(F("In dec: "));
+    printDec(rfid.uid.uidByte, rfid.uid.size);
+    Serial.println();
+  }
+  else Serial.println(F("Card read previously."));
+
+  // Halt PICC
+  rfid.PICC_HaltA();
+
+  // Stop encryption on PCD
+  rfid.PCD_StopCrypto1();
 }
 
 void setup() {
@@ -410,6 +472,11 @@ void setup() {
   sdCardInit();
   tv.tv_sec = 1540885090;
   settimeofday(&tv, NULL);
+
+  rfidInitSetting();
+  
+
+
 
   pinMode(button1.PIN, INPUT_PULLUP);             // 심박 센서 GPIO 핀처리
   //    attachInterruptArg(button1.PIN, isr, &button1, FALLING);
@@ -585,5 +652,7 @@ void loop() {
     // do stuff here on connecting
     oldDeviceConnected = deviceConnected;
   }
+
+  rfidProcess();
 }
 
