@@ -169,23 +169,23 @@ Button button1 = {14, 0, false};                      // 심박 센서
 Button button2 = {15, 0, false};                      // 자계 감지 센서
 
 void IRAM_ATTR isr() {                                // 자계감지 센서 External Interrupt Function
-  
+
   if (count == 0) {
     fitnessStartOrEndFlag = true;
     startFitnessTime = millis();
   }
-  
+
   intterrupt_time = millis();
   if ( intterrupt_time - t >  50 ) {
     button2.numberKeyPresses += 1;
     button2.pressed = true;
   }
 
-//  // ISR에 들어온 시간 - 이전 저장 값
-//  // 클럭 카운트의 계수가 2개식 증가하는 현상을 잡아준다.
-//  if ( intterrupt_time - t >  50 ) {
-//
-//  }
+  //  // ISR에 들어온 시간 - 이전 저장 값
+  //  // 클럭 카운트의 계수가 2개식 증가하는 현상을 잡아준다.
+  //  if ( intterrupt_time - t >  50 ) {
+  //
+  //  }
 
 }
 
@@ -602,9 +602,9 @@ void loop() {
 
     t = millis(); //시간 저장
     button2.pressed = false;
-    
+
   }
-  
+
   if (deviceConnected) { // 만약 블루투스 연결이 되었다면
     long currentMillis = millis();    // 현재 시스템 시간 저장
     if (fitnessStartOrEndFlag) { // 블루투스 연결은 되어 있는 상태에서 운동 중일 때만 실시간 전송이 되도록
@@ -673,11 +673,22 @@ void loop() {
         uint16_t meanSpeed = sumSpeed / count; //카운트 수를 기준으로 평균 운동 기록 연산
         int tmpTime = (int)(workoutTime / 1000.0f);
         uint16_t saveWorkoutTime = (uint16_t)tmpTime;     //운동 시간 변수
+        uint32_t userTag = 0;
+
+        userTag  |= (nuidPICC[0] << 24) & 0xFF000000;
+        userTag  |= (nuidPICC[1] << 16) & 0x00FF0000;
+        userTag  |= (nuidPICC[2] << 8) & 0x0000FF00;
+        userTag  |= nuidPICC[3] & 0x000000FF;
+
+        Serial.print("사용자 태그 "); Serial.println(userTag, HEX);
         char x[50] = {};
         //        sprintf(x, "%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%ld,%ld\n", rice, soup, sideA, sideB, sideC, sideD, startIntakeTime, mytime.tv_sec);
-        sprintf(x, "%ld,%ld,%ld,%ld\n", startFitnessTime , endFitnessTime, saveWorkoutTime, mytime.tv_sec);
+        sprintf(x, "%u,%ld,%ld,%ld,%ld\n", userTag, startFitnessTime , endFitnessTime, saveWorkoutTime, mytime.tv_sec);
         appendFile(SD, "/data_logger/log.csv", x);
 
+
+        readFile(SD, "/data_logger/log.csv");
+        
         // 운동 종료시 모든 변수 초기화
         fitnessStartOrEndFlag = false;
         t = 0;
@@ -693,6 +704,10 @@ void loop() {
         sumSpeed = 0x0000;      // 운동 속도 총합
         sumHeartRate = 0;       // 심박수 총합
         Serial.println("운동 종료처리");
+        button2.pressed = false;
+        for (byte i = 0; i < 4; i++) {         // 초기화 NUID into nuidPICC array
+          nuidPICC[i] = 0x00;
+        }
 
       }
 
