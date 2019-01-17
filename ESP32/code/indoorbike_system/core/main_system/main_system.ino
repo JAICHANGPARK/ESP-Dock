@@ -127,8 +127,10 @@ volatile uint32_t sumDistanceKm = 0x0000;          // 평균을 구하기 위한
 volatile uint32_t sumSpeed = 0x0000;               // 평균 속도를 구하기 위한 속도 합 변수 (더 해짐)
 volatile uint32_t sumHeartRate = 0;                // 평균 심박수를 구하기 위한 변수
 
+long intterrupt_time = 0;
 long t = 0;                                        // 센서 입력 외부 인터럽트 시간 변수 .
 volatile float InstantTime = 0.0f;                 // 순간 속도 연산을 위한 델타 t 시간 변수
+
 
 uint8_t heartRateData[] = {0b00000010, 0x00};
 uint8_t treadmillData[] = {0x05, 0x00, 0x00, 0x00, 0x00};
@@ -167,48 +169,24 @@ Button button1 = {14, 0, false};                      // 심박 센서
 Button button2 = {15, 0, false};                      // 자계 감지 센서
 
 void IRAM_ATTR isr() {                                // 자계감지 센서 External Interrupt Function
-  //  button2.numberKeyPresses += 1;
-  //  button2.pressed = true;
-
+  
   if (count == 0) {
     fitnessStartOrEndFlag = true;
     startFitnessTime = millis();
   }
-  long intterrupt_time = millis();
-
-  // ISR에 들어온 시간 - 이전 저장 값
-  // 클럭 카운트의 계수가 2개식 증가하는 현상을 잡아준다.
+  
+  intterrupt_time = millis();
   if ( intterrupt_time - t >  50 ) {
-    count++; //자계 센서로 부터 외부인터럽트가 발생하면 1씩 증가시키도록
-#ifdef ERGOMETER_LEXPA
-    distance = (LEXPA_DISTANCE * count); // 총 이동 거리 --> 단위 넣을것
-    distanceUnitKm = distance / 1000.0f; // 단위 km
-    uintDistanceKm = (distanceUnitKm * 100);
-
-    InstantTime = (float)(intterrupt_time - t) / 1000.0f;
-    speedNow = 3.6f * (LEXPA_DISTANCE / InstantTime);  // 현재 속도
-    uintSpeedNow = (speedNow * 100);  // 애플리케이션으로 실시간 전송을 위해 100을 곱한다.
-    uintTotalDistance = (uint32_t) distance; // 애플리케이션으로 실시간 운동 거리 전송을 위해 케스팅한다. 단위 m
-    workoutTime = intterrupt_time - startFitnessTime;
-
-    //평균 구하기위한 더하기 연산
-    sumSpeed += uintSpeedNow;   //속도 합
-    sumDistanceKm += uintDistanceKm; // 거리합 km를 100 곱한 값
-
-#else
-    distance = (ONE_ROUND_DISTANCE * count); // 총 이동 거리
-    distanceUnitKm = distance / 1000.0f;
-    InstantTime = (float)(intterrupt_time - t) / 1000.0f;
-    speedNow = 3.6f * (ONE_ROUND_DISTANCE / InstantTime);
-    uintSpeedNow = (speedNow * 100);
-    uintTotalDistance = distance * 100;
-    workoutTime = intterrupt_time - startFitnessTime;
-#endif
-
-    //  speedNow = 3.6f * (distance / (float)(intterrupt_time - t));
-
-    t = millis(); //시간 저장
+    button2.numberKeyPresses += 1;
+    button2.pressed = true;
   }
+
+//  // ISR에 들어온 시간 - 이전 저장 값
+//  // 클럭 카운트의 계수가 2개식 증가하는 현상을 잡아준다.
+//  if ( intterrupt_time - t >  50 ) {
+//
+//  }
+
 }
 
 //#define CHARACTERISTIC_UUID_REALTIME        "0000ffe3-0000-1000-8000-00805f9b34fb"
@@ -592,15 +570,41 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  //  if (button1.pressed) {
-  //    Serial.printf("Button 1 has been pressed %u times\n", button1.numberKeyPresses);
-  //    button1.pressed = false;
-  //  }
-  //  if (button2.pressed) {
-  //    Serial.printf("Button 2 has been pressed %u times\n", button2.numberKeyPresses);
-  //    button2.pressed = false;
-  //  }
+  if (button2.pressed) {
+    count++; //자계 센서로 부터 외부인터럽트가 발생하면 1씩 증가시키도록
+#ifdef ERGOMETER_LEXPA
+    distance = (LEXPA_DISTANCE * count); // 총 이동 거리 --> 단위 넣을것
+    distanceUnitKm = distance / 1000.0f; // 단위 km
+    uintDistanceKm = (distanceUnitKm * 100);
 
+    InstantTime = (float)(intterrupt_time - t) / 1000.0f;
+    speedNow = 3.6f * (LEXPA_DISTANCE / InstantTime);  // 현재 속도
+    uintSpeedNow = (speedNow * 100);  // 애플리케이션으로 실시간 전송을 위해 100을 곱한다.
+    uintTotalDistance = (uint32_t) distance; // 애플리케이션으로 실시간 운동 거리 전송을 위해 케스팅한다. 단위 m
+    workoutTime = intterrupt_time - startFitnessTime;
+
+    //평균 구하기위한 더하기 연산
+    sumSpeed += uintSpeedNow;   //속도 합
+    sumDistanceKm += uintDistanceKm; // 거리합 km를 100 곱한 값
+
+#else
+    distance = (ONE_ROUND_DISTANCE * count); // 총 이동 거리
+    distanceUnitKm = distance / 1000.0f;
+    InstantTime = (float)(intterrupt_time - t) / 1000.0f;
+    speedNow = 3.6f * (ONE_ROUND_DISTANCE / InstantTime);
+    uintSpeedNow = (speedNow * 100);
+    uintTotalDistance = distance * 100;
+    workoutTime = intterrupt_time - startFitnessTime;
+#endif
+
+    //  speedNow = 3.6f * (distance / (float)(intterrupt_time - t));
+
+
+    t = millis(); //시간 저장
+    button2.pressed = false;
+    
+  }
+  
   if (deviceConnected) { // 만약 블루투스 연결이 되었다면
     long currentMillis = millis();    // 현재 시스템 시간 저장
     if (fitnessStartOrEndFlag) { // 블루투스 연결은 되어 있는 상태에서 운동 중일 때만 실시간 전송이 되도록
@@ -669,8 +673,10 @@ void loop() {
         uint16_t meanSpeed = sumSpeed / count; //카운트 수를 기준으로 평균 운동 기록 연산
         int tmpTime = (int)(workoutTime / 1000.0f);
         uint16_t saveWorkoutTime = (uint16_t)tmpTime;     //운동 시간 변수
-        char x[46] = {};
-        sprintf(x, "%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%ld,%ld\n", rice, soup, sideA, sideB, sideC, sideD, startIntakeTime, mytime.tv_sec);
+        char x[50] = {};
+        //        sprintf(x, "%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%ld,%ld\n", rice, soup, sideA, sideB, sideC, sideD, startIntakeTime, mytime.tv_sec);
+        sprintf(x, "%ld,%ld,%ld,%ld\n", startFitnessTime , endFitnessTime, saveWorkoutTime, mytime.tv_sec);
+        appendFile(SD, "/data_logger/log.csv", x);
 
         // 운동 종료시 모든 변수 초기화
         fitnessStartOrEndFlag = false;
