@@ -2,9 +2,14 @@
 /**
 
    실내 자전거 운동 정보 자동 획득 장치
-   Device : ESP - 32
-   Code : Dreamwalker( 박제창 )
-   codeVersion : 1.0.0
+   - Device : ESP - 32
+   - Code : Dreamwalker( 박제창 )
+   - CodeVersion : 1.0.0
+
+
+   메모리 저장 루트
+   - 세이브 포인트 : /save_point/sp.csv
+   - 데이터 로그 (운동정보 저장) : /data_logger/log.csv
 
 */
 #include "FS.h"
@@ -660,7 +665,12 @@ void loop() {
       // 모든 변수 초기화 및 플레그 초기화
       // SD카드 저장 작업 처리
       if (realTimeCurrentTimeMillis  - t > WORKOUT_DONE_TIME_MILLIS) { // 운동 중 플레그가 high이고 (운동 중 이지만) 30초 동안 동작이 없으면 운동 종료 판단
-
+        endFitnessTime = millis();                        // 운동 종료시 프로세서 시간 저장.
+        uint16_t meanSpeed = sumSpeed / count; //카운트 수를 기준으로 평균 운동 기록 연산
+        int tmpTime = (int)(workoutTime / 1000.0f);
+        uint16_t saveWorkoutTime = (uint16_t)tmpTime;     //운동 시간 변수
+        char x[46] = {};
+        sprintf(x, "%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%3.0f,%ld,%ld\n", rice, soup, sideA, sideB, sideC, sideD, startIntakeTime, mytime.tv_sec);
 
         // 운동 종료시 모든 변수 초기화
         fitnessStartOrEndFlag = false;
@@ -668,11 +678,11 @@ void loop() {
         count = 0;              // 자계감지 인터럽트 카운트
         distance = 0;           // 이동거리
         distanceUnitKm = 0;     // 이동거리
+        uintDistanceKm = 0;     // unsigned 이동거리
         startFitnessTime = 0;   // 운동 시작 시간
         endFitnessTime = 0;     // 운동 종료 시간
-        sumSpeed = 0;           // 속도 총합
         workoutTime = 0;        // 운동 시간
-        uintDistanceKm = 0;     // unsigned 이동거리
+        sumSpeed = 0;           // 속도 총합
         sumDistanceKm = 0x0000; // 이동거리 총합
         sumSpeed = 0x0000;      // 운동 속도 총합
         sumHeartRate = 0;       // 심박수 총합
