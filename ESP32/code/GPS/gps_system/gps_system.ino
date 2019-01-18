@@ -109,44 +109,23 @@ void loop()
     Serial.println(F("No GPS detected: check wiring."));
     while (true);
   }
-  
+
 }
 
 void displayInfo()
 {
   Serial.print(F("Location: "));
-  if (gps.location.isValid() && gps.date.isValid() && gps.time.isValid()){
+  if (gps.location.isValid() && gps.date.isValid() && gps.time.isValid()) {
     Serial.print(gps.location.lat());
     Serial.print(F(","));
     Serial.print(gps.location.lng());
     Serial.print("ALT=");  Serial.print(gps.altitude.meters());
-    char x[20] = {};
-    sprintf(x, "%7.4f,%7.4f\n", gps.location.lat(), gps.location.lng());
-    appendFile(SD, "/gps_log.csv", x);
-    //    Serial.print(gps.location.lat(), 6);
-    //    Serial.print(F(","));
-    //    Serial.print(gps.location.lng(), 6);
-    //    Serial.print("ALT=");  Serial.print(gps.altitude.meters());
 
-  } else {
-    Serial.print(F("INVALID"));
-  }
-
-  Serial.print(F("  Date/Time: "));
-  if (gps.date.isValid())
-  {
     Serial.print(gps.date.month());
     Serial.print(F("/"));
     Serial.print(gps.date.day());
     Serial.print(F("/"));
     Serial.print(gps.date.year());
-  } else {
-    Serial.print(F("INVALID"));
-  }
-
-  Serial.print(F(" "));
-  if (gps.time.isValid())
-  {
     if (gps.time.hour() < 10) Serial.print(F("0"));
     Serial.print(gps.time.hour());
     Serial.print(F(":"));
@@ -158,11 +137,21 @@ void displayInfo()
     Serial.print(F("."));
     if (gps.time.centisecond() < 10) Serial.print(F("0"));
     Serial.print(gps.time.centisecond());
-  }
-  else
-  {
+    Serial.println();
+
+
+    char x[50] = {};
+    String gpsDate = String(gps.date.month()) + "-" + String(gps.date.day()) + "-" + String(gps.date.year());
+    String gpsTime =  String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second());
+    sprintf(x, "%7.4f,%7.4f,%04u-%02u-%02u %02u:%02u:%02u\n",
+            gps.location.lat(), gps.location.lng(),
+            gps.date.year(), gps.date.month(), gps.date.day(), 
+            gps.time.hour(), gps.time.minute(), gps.time.second() );
+    appendFile(SD, "/gps_log.csv", x);
+
+  } else {
     Serial.print(F("INVALID"));
+    Serial.println();
   }
 
-  Serial.println();
 }
