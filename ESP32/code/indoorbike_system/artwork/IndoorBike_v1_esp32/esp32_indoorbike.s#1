@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
+<grid distance="1.27" unitdist="mm" unit="mm" style="dots" multiple="1" display="yes" altdistance="0.127" altunitdist="mm" altunit="mm"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -14781,6 +14781,13 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <pinref part="R2" gate="G$1" pin="1"/>
 </segment>
 </net>
+<net name="3V_OUT" class="0">
+<segment>
+<pinref part="J2" gate="G$1" pin="1"/>
+<wire x1="54.61" y1="74.93" x2="50.8" y2="74.93" width="0.1524" layer="91"/>
+<label x="50.8" y="74.93" size="1.27" layer="95" rot="R180" xref="yes"/>
+</segment>
+</net>
 <net name="RST" class="0">
 <segment>
 <pinref part="J2" gate="G$1" pin="2"/>
@@ -15073,11 +15080,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <pinref part="RFID" gate="G$1" pin="1"/>
 <wire x1="223.52" y1="137.16" x2="227.33" y2="137.16" width="0.1524" layer="91"/>
 <label x="227.33" y="137.16" size="1.27" layer="95" xref="yes"/>
-</segment>
-<segment>
-<pinref part="J2" gate="G$1" pin="1"/>
-<wire x1="54.61" y1="74.93" x2="50.8" y2="74.93" width="0.1524" layer="91"/>
-<label x="50.8" y="74.93" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="3.3V" class="0">

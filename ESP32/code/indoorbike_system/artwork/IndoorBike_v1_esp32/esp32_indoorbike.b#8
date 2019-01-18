@@ -3,10 +3,10 @@
 <eagle version="9.3.0">
 <drawing>
 <settings>
-<setting alwaysvectorfont="yes"/>
+<setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.05" unitdist="mm" unit="mm" style="dots" multiple="1" display="yes" altdistance="5" altunitdist="mil" altunit="mm"/>
+<grid distance="0.635" unitdist="mm" unit="mm" style="dots" multiple="1" display="yes" altdistance="5" altunitdist="mil" altunit="mm"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="2" name="Route2" color="16" fill="1" visible="no" active="no"/>
@@ -2076,18 +2076,19 @@ design rules under a new name.</description>
 <contactref element="HEARTRATE" pad="1"/>
 <contactref element="SDCARD" pad="3"/>
 <contactref element="RFID" pad="3"/>
-<polygon width="0.1524" layer="1">
-<vertex x="0" y="99.95"/>
-<vertex x="0" y="0"/>
-<vertex x="100" y="0"/>
-<vertex x="100" y="99.95"/>
-</polygon>
-<polygon width="0.1524" layer="16" spacing="2.54">
-<vertex x="0.1" y="99.95"/>
-<vertex x="0.1" y="0"/>
-<vertex x="100" y="0"/>
-<vertex x="100" y="99.95"/>
-</polygon>
+<wire x1="45.72" y1="67.67" x2="83.82" y2="3.81" width="0" layer="19" extent="1-1"/>
+<wire x1="71.12" y1="3.81" x2="83.82" y2="3.81" width="0" layer="19" extent="1-1"/>
+<wire x1="26.67" y1="18.92" x2="71.12" y2="3.81" width="0" layer="19" extent="1-1"/>
+<wire x1="30.48" y1="18.92" x2="26.67" y2="18.92" width="0" layer="19" extent="1-1"/>
+<wire x1="21.72" y1="29.21" x2="30.48" y2="18.92" width="0" layer="19" extent="1-1"/>
+<wire x1="25.27" y1="29.21" x2="21.72" y2="29.21" width="0" layer="19" extent="1-1"/>
+<wire x1="57.15" y1="3.81" x2="30.48" y2="18.92" width="0" layer="19" extent="1-1"/>
+<wire x1="18.02" y1="18.44" x2="57.15" y2="3.81" width="0" layer="19" extent="1-1"/>
+<wire x1="8.43" y1="10.16" x2="18.02" y2="18.44" width="0" layer="19" extent="1-1"/>
+<wire x1="11.43" y1="5.36" x2="8.43" y2="10.16" width="0" layer="19" extent="1-1"/>
+<wire x1="60.96" y1="15.24" x2="45.72" y2="67.67" width="0" layer="19" extent="1-1"/>
+<wire x1="60.96" y1="66.04" x2="60.96" y2="15.24" width="0" layer="19" extent="1-1"/>
+<wire x1="7.62" y1="67.67" x2="25.27" y2="29.21" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="N$2">
 <contactref element="LED1" pad="K"/>
@@ -2127,6 +2128,9 @@ design rules under a new name.</description>
 <via x="29.845" y="27.305" extent="1-16" drill="0.35"/>
 <wire x1="29.845" y1="27.305" x2="36.83" y2="20.32" width="0.254" layer="16"/>
 <wire x1="36.83" y1="20.32" x2="36.83" y2="11.43" width="0.254" layer="16"/>
+</signal>
+<signal name="3V_OUT">
+<contactref element="J2" pad="1"/>
 </signal>
 <signal name="RST">
 <contactref element="J2" pad="2"/>
@@ -2327,22 +2331,7 @@ design rules under a new name.</description>
 <wire x1="58.42" y1="62.865" x2="55.245" y2="59.69" width="0.254" layer="1"/>
 <wire x1="55.245" y1="59.69" x2="55.245" y2="15.875" width="0.254" layer="1"/>
 <wire x1="55.245" y1="15.875" x2="55.88" y2="15.24" width="0.254" layer="1"/>
-<contactref element="J2" pad="1"/>
-<wire x1="7.62" y1="90.17" x2="7.62" y2="92.075" width="0.254" layer="1"/>
-<wire x1="7.62" y1="92.075" x2="8.89" y2="93.345" width="0.254" layer="1"/>
-<wire x1="47.115" y1="93.345" x2="51.12" y2="89.34" width="0.254" layer="1"/>
-<wire x1="51.12" y1="89.34" x2="51.12" y2="76.91" width="0.254" layer="1"/>
-<wire x1="51.12" y1="76.91" x2="51.57" y2="76.46" width="0.254" layer="1"/>
-<wire x1="51.57" y1="76.46" x2="51.62" y2="76.46" width="0.254" layer="1"/>
-<via x="51.62" y="76.46" extent="1-16" drill="0.35"/>
-<wire x1="51.62" y1="76.46" x2="58.42" y2="69.66" width="0.254" layer="16"/>
-<wire x1="58.42" y1="69.66" x2="58.42" y2="66.04" width="0.254" layer="16"/>
-<wire x1="8.89" y1="93.345" x2="47.115" y2="93.345" width="0.254" layer="1"/>
-<wire x1="73.66" y1="3.81" x2="73.66" y2="3.06" width="0.254" layer="16"/>
-<wire x1="73.66" y1="3.06" x2="71.743" y2="1.143" width="0.254" layer="16"/>
-<wire x1="71.743" y1="1.143" x2="55.9" y2="1.143" width="0.254" layer="16"/>
-<wire x1="55.9" y1="1.143" x2="54.61" y2="2.433" width="0.254" layer="16"/>
-<wire x1="54.61" y1="2.433" x2="54.61" y2="3.81" width="0.254" layer="16"/>
+<wire x1="54.61" y1="3.81" x2="73.66" y2="3.81" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="3.3V">
 <contactref element="IC1" pad="4"/>
