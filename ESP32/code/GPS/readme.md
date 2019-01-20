@@ -1,1 +1,4 @@
 # GPS System
+
+1. ESP 32 : LOLIN D32 or D32 PRO 
+2. MICRO SD : DATA LOGGING
